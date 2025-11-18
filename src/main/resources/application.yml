@@ -1,0 +1,221 @@
+spring:
+  application:
+    name: logistique-dakar
+  
+  # Configuration Base de données
+  datasource:
+    url: jdbc:postgresql://localhost:5432/logistique_dakar
+    username: logistique_user
+    password: logistique2024
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+  
+  # JPA/Hibernate
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        use_sql_comments: false
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+    open-in-view: false
+  
+  # Flyway
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+    validate-on-migrate: true
+  
+  # Jackson
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+      indent-output: true
+    deserialization:
+      fail-on-unknown-properties: false
+    default-property-inclusion: non_null
+    time-zone: Africa/Dakar
+  
+  # Server
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+  error:
+    include-message: always
+    include-binding-errors: always
+    include-stacktrace: never
+    include-exception: false
+
+# Configuration JWT
+jwt:
+  secret: ${JWT_SECRET:votreSecretSuperSecretQuiDoitEtreTresLongEtComplexePourLaSecurite2024}
+  expiration: 86400000 # 24 heures en millisecondes
+  refresh-expiration: 604800000 # 7 jours
+
+# Configuration Twilio (WhatsApp)
+twilio:
+  account-sid: ${TWILIO_ACCOUNT_SID:your_account_sid}
+  auth-token: ${TWILIO_AUTH_TOKEN:your_auth_token}
+  whatsapp-from: ${TWILIO_WHATSAPP_FROM:whatsapp:+14155238886}
+  enabled: ${TWILIO_ENABLED:false}
+
+# Configuration Application
+app:
+  base-url: ${APP_BASE_URL:http://localhost:8080}
+  tracking-url: ${TRACKING_URL:https://track.votreplateforme.sn}
+  
+  # Numérotation des colis
+  tracking:
+    prefix: DKR
+    start-number: 1
+  
+  # Commission plateforme
+  commission:
+    percentage: 40 # 40% pour la plateforme, 60% pour le livreur
+  
+  # Tarifs supplémentaires poids
+  tarifs:
+    supplement-poids-5kg: 500 # +500 FCFA si poids > 5kg
+    supplement-poids-10kg: 1000 # +1000 FCFA si poids > 10kg
+  
+  # CORS
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200,https://app.votreplateforme.sn}
+    allowed-methods: GET,POST,PUT,DELETE,OPTIONS,PATCH
+    allowed-headers: "*"
+    allow-credentials: true
+    max-age: 3600
+
+# Logging
+logging:
+  level:
+    root: INFO
+    sn.votreplateforme: DEBUG
+    org.springframework.web: INFO
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# Springdoc OpenAPI
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
+    tagsSorter: alpha
+    disable-swagger-default-url: true
+  show-actuator: false
+
+# Actuator (monitoring)
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+
+---
+# Profil Développement
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+logging:
+  level:
+    sn.votreplateforme: DEBUG
+    org.springframework.web: DEBUG
+
+app:
+  base-url: http://localhost:8080
+  tracking-url: http://localhost:4200/tracking
+
+twilio:
+  enabled: false # Désactivé en dev pour éviter les frais
+
+---
+# Profil Test
+spring:
+  config:
+    activate:
+      on-profile: test
+
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    database-platform: org.hibernate.dialect.H2Dialect
+  
+  flyway:
+    enabled: false
+
+logging:
+  level:
+    root: WARN
+    sn.votreplateforme: DEBUG
+
+twilio:
+  enabled: false
+
+---
+# Profil Production
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+  jpa:
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+
+logging:
+  level:
+    root: INFO
+    sn.votreplateforme: INFO
+    org.springframework.web: WARN
+    org.hibernate.SQL: WARN
+
+server:
+  error:
+    include-stacktrace: never
+    include-exception: false
+
+twilio:
+  enabled: true

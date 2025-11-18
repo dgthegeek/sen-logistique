@@ -1,0 +1,1712 @@
+openapi: 3.0.3
+info:
+  title: Plateforme Logistique Dakar API
+  description: |
+    API pour la gestion de livraisons pour vendeurs à Dakar.
+    
+    **Fonctionnalités principales :**
+    - Gestion des livraisons (création, suivi, statuts)
+    - Ramassages groupés par zones
+    - Notifications WhatsApp automatiques
+    - Gestion financière (Cash on Delivery)
+    - Tracking public des colis
+    
+    **Authentification :** JWT Bearer Token
+  version: 1.0.0-MVP
+  contact:
+    name: Plateforme Logistique Dakar
+    email: damegaye1887@gmail.com
+
+servers:
+  - url: http://localhost:8080/api
+    description: Serveur de développement
+  - url: https://api.votreplateforme.sn/api
+    description: Serveur de production
+
+tags:
+  - name: Authentication
+    description: Endpoints d'authentification et gestion des comptes
+  - name: Vendeur
+    description: Endpoints pour les vendeurs (création livraisons, finances, etc.)
+  - name: Admin - Ramassages
+    description: Gestion des ramassages groupés
+  - name: Admin - Livraisons
+    description: Gestion des livraisons à effectuer
+  - name: Admin - Finances
+    description: Gestion financière et paiements vendeurs
+  - name: Delivery
+    description: Confirmation de livraison (via scan QR)
+  - name: Tracking
+    description: Suivi public des colis
+  - name: Zones
+    description: Gestion des zones et quartiers
+
+security:
+  - bearerAuth: []
+
+paths:
+  # ============================================
+  # AUTHENTICATION
+  # ============================================
+  /auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Inscription d'un nouveau vendeur
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Inscription réussie
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Données invalides
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Utilisateur déjà existant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Connexion
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Connexion réussie
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Identifiants invalides
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/refresh:
+    post:
+      tags:
+        - Authentication
+      summary: Rafraîchir le token JWT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refreshToken
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        '200':
+          description: Token rafraîchi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Token invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/forgot-password:
+    post:
+      tags:
+        - Authentication
+      summary: Demande de réinitialisation de mot de passe
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - telephone
+              properties:
+                telephone:
+                  type: string
+                  example: "771234567"
+      responses:
+        '200':
+          description: Message de réinitialisation envoyé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Code de réinitialisation envoyé par WhatsApp"
+        '404':
+          description: Utilisateur non trouvé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ============================================
+  # VENDEUR
+  # ============================================
+  /vendeur/dashboard:
+    get:
+      tags:
+        - Vendeur
+      summary: Tableau de bord du vendeur
+      description: Statistiques du jour (total colis, livrés, en cours)
+      responses:
+        '200':
+          description: Dashboard récupéré avec succès
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VendeurDashboard'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /vendeur/livraisons:
+    get:
+      tags:
+        - Vendeur
+      summary: Liste des livraisons du vendeur
+      parameters:
+        - name: statut
+          in: query
+          description: Filtrer par statut
+          schema:
+            $ref: '#/components/schemas/StatutLivraison'
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Liste des livraisons
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageLivraison'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+    
+    post:
+      tags:
+        - Vendeur
+      summary: Créer une nouvelle livraison
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateLivraisonRequest'
+      responses:
+        '201':
+          description: Livraison créée avec succès
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LivraisonResponse'
+        '400':
+          description: Données invalides
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /vendeur/livraisons/{id}:
+    get:
+      tags:
+        - Vendeur
+      summary: Détails d'une livraison
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Détails de la livraison
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LivraisonDetailResponse'
+        '404':
+          description: Livraison non trouvée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /vendeur/finances:
+    get:
+      tags:
+        - Vendeur
+      summary: État financier du vendeur
+      description: Solde en attente, historique des paiements, statistiques du mois
+      responses:
+        '200':
+          description: Finances récupérées
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VendeurFinances'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /vendeur/demande-paiement:
+    post:
+      tags:
+        - Vendeur
+      summary: Demander un paiement
+      description: Le vendeur demande à récupérer son solde en cash
+      responses:
+        '200':
+          description: Demande de paiement créée
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Demande de paiement envoyée à l'admin"
+                  montant:
+                    type: number
+                    format: decimal
+                    example: 387500
+        '400':
+          description: Solde insuffisant ou demande déjà en cours
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  # ============================================
+  # ADMIN - RAMASSAGES
+  # ============================================
+  /admin/ramassages:
+    get:
+      tags:
+        - Admin - Ramassages
+      summary: Liste de tous les ramassages
+      parameters:
+        - name: date
+          in: query
+          description: Date des ramassages (format YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+        - name: zone
+          in: query
+          description: Filtrer par zone
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Liste des ramassages
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  zones:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RamassageZone'
+                  totalColis:
+                    type: integer
+                    example: 42
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /admin/ramassages/today:
+    get:
+      tags:
+        - Admin - Ramassages
+      summary: Ramassages du jour
+      description: Liste des colis en attente de ramassage aujourd'hui, groupés par zone
+      responses:
+        '200':
+          description: Ramassages du jour
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  zones:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RamassageZone'
+                  totalColis:
+                    type: integer
+                    example: 12
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /admin/ramassages/notifier-zone/{zoneNom}:
+    post:
+      tags:
+        - Admin - Ramassages
+      summary: Notifier les vendeurs d'une zone
+      description: Envoie un message WhatsApp groupé aux vendeurs pour préparer leurs colis
+      parameters:
+        - name: zoneNom
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "Sacré-Coeur"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                heureRamassage:
+                  type: string
+                  example: "15h"
+      responses:
+        '200':
+          description: Notifications envoyées
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "3 vendeurs notifiés"
+                  vendeursNotifies:
+                    type: integer
+                    example: 3
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /admin/ramassages/marquer-ramasse:
+    post:
+      tags:
+        - Admin - Ramassages
+      summary: Marquer des colis comme ramassés
+      description: Change le statut des colis en "RAMASSE" et envoie les notifications
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - livraisonIds
+              properties:
+                livraisonIds:
+                  type: array
+                  items:
+                    type: integer
+                    format: int64
+                  example: [1, 2, 3, 4, 5]
+      responses:
+        '200':
+          description: Colis marqués comme ramassés
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "5 colis marqués comme ramassés"
+                  colisRamasses:
+                    type: integer
+                    example: 5
+        '400':
+          description: Erreur dans les IDs fournis
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /admin/ramassages/imprimer-qr:
+    post:
+      tags:
+        - Admin - Ramassages
+      summary: Générer un PDF avec les QR codes
+      description: Génère un PDF avec tous les QR codes des colis ramassés
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - livraisonIds
+              properties:
+                livraisonIds:
+                  type: array
+                  items:
+                    type: integer
+                    format: int64
+                  example: [1, 2, 3]
+      responses:
+        '200':
+          description: PDF généré
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '400':
+          description: Erreur dans les IDs fournis
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  # ============================================
+  # ADMIN - LIVRAISONS
+  # ============================================
+  /admin/livraisons:
+    get:
+      tags:
+        - Admin - Livraisons
+      summary: Liste de toutes les livraisons
+      parameters:
+        - name: statut
+          in: query
+          schema:
+            $ref: '#/components/schemas/StatutLivraison'
+        - name: date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: Liste des livraisons
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageLivraison'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /admin/livraisons/a-livrer:
+    get:
+      tags:
+        - Admin - Livraisons
+      summary: Colis à livrer
+      description: Liste des colis avec statut RAMASSE, prêts pour livraison
+      parameters:
+        - name: zone
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Colis à livrer
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  zones:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/LivraisonZone'
+                  totalColis:
+                    type: integer
+                    example: 18
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /admin/livraisons/{id}:
+    get:
+      tags:
+        - Admin - Livraisons
+      summary: Détails d'une livraison (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Détails de la livraison
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LivraisonDetailResponse'
+        '404':
+          description: Livraison non trouvée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  # ============================================
+  # ADMIN - FINANCES
+  # ============================================
+  /admin/finances/dashboard:
+    get:
+      tags:
+        - Admin - Finances
+      summary: Dashboard financier
+      description: Vue d'ensemble des finances (cash collecté, à payer, commissions)
+      parameters:
+        - name: periode
+          in: query
+          schema:
+            type: string
+            enum: [jour, semaine, mois]
+            default: jour
+      responses:
+        '200':
+          description: Dashboard financier
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminFinancesDashboard'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /admin/finances/paiements-pending:
+    get:
+      tags:
+        - Admin - Finances
+      summary: Demandes de paiement en attente
+      description: Liste des vendeurs ayant demandé un paiement
+      responses:
+        '200':
+          description: Liste des demandes de paiement
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  demandes:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DemandePaiement'
+                  totalAPayer:
+                    type: number
+                    format: decimal
+                    example: 8340000
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /admin/finances/payer-vendeur/{vendeurId}:
+    post:
+      tags:
+        - Admin - Finances
+      summary: Payer un vendeur en cash
+      description: Marque le paiement comme effectué après remise du cash
+      parameters:
+        - name: vendeurId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - montant
+              properties:
+                montant:
+                  type: number
+                  format: decimal
+                  example: 387500
+                commentaire:
+                  type: string
+                  example: "Paiement en cash remis au vendeur"
+      responses:
+        '200':
+          description: Paiement effectué
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Paiement de 387,500 FCFA effectué"
+                  reference:
+                    type: string
+                    example: "PAY-20251116-001"
+        '400':
+          description: Montant invalide ou solde insuffisant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /admin/finances/transactions:
+    get:
+      tags:
+        - Admin - Finances
+      summary: Historique des transactions
+      parameters:
+        - name: vendeurId
+          in: query
+          schema:
+            type: integer
+            format: int64
+        - name: dateDebut
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: dateFin
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: Liste des transactions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageTransaction'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  # ============================================
+  # DELIVERY (Scan QR + Confirmation)
+  # ============================================
+  /delivery/{numeroTracking}:
+    get:
+      tags:
+        - Delivery
+      summary: Récupérer les infos de livraison (via QR scan)
+      description: Endpoint appelé après scan du QR code, retourne les infos pré-remplies
+      security: []
+      parameters:
+        - name: numeroTracking
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "DKR-00567"
+      responses:
+        '200':
+          description: Informations de livraison
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliveryInfoResponse'
+        '404':
+          description: Colis non trouvé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /delivery/{numeroTracking}/livrer:
+    post:
+      tags:
+        - Delivery
+      summary: Confirmer la livraison
+      description: Marque le colis comme livré après remise au client
+      security: []
+      parameters:
+        - name: numeroTracking
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "DKR-00567"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfirmLivraisonRequest'
+      responses:
+        '200':
+          description: Livraison confirmée
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Livraison confirmée avec succès"
+                  numeroTracking:
+                    type: string
+                    example: "DKR-00567"
+        '400':
+          description: Données invalides ou colis pas dans le bon statut
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Colis non trouvé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ============================================
+  # TRACKING PUBLIC
+  # ============================================
+  /tracking/{numeroTracking}:
+    get:
+      tags:
+        - Tracking
+      summary: Suivi public d'un colis
+      description: Page de tracking accessible par le client final (pas d'auth requise)
+      security: []
+      parameters:
+        - name: numeroTracking
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "DKR-00567"
+      responses:
+        '200':
+          description: Informations de tracking
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrackingResponse'
+        '404':
+          description: Colis non trouvé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ============================================
+  # ZONES & QUARTIERS
+  # ============================================
+  /zones:
+    get:
+      tags:
+        - Zones
+      summary: Liste des zones de livraison
+      security: []
+      responses:
+        '200':
+          description: Liste des zones
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Zone'
+
+  /quartiers/commune/{commune}:
+    get:
+      tags:
+        - Zones
+      summary: Liste des quartiers d'une commune
+      description: Pour l'auto-complétion dans le formulaire
+      security: []
+      parameters:
+        - name: commune
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "Dakar"
+      responses:
+        '200':
+          description: Liste des quartiers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Quartier'
+
+  /tarifs/calculer:
+    post:
+      tags:
+        - Zones
+      summary: Calculer le tarif de livraison
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - zoneId
+              properties:
+                zoneId:
+                  type: integer
+                  format: int64
+                urgence:
+                  $ref: '#/components/schemas/TypeUrgence'
+                poids:
+                  type: number
+                  format: double
+                  example: 2.5
+      responses:
+        '200':
+          description: Tarif calculé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TarifResponse'
+        '400':
+          description: Données invalides
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+# ============================================
+# COMPONENTS
+# ============================================
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  responses:
+    UnauthorizedError:
+      description: Token manquant ou invalide
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    
+    ForbiddenError:
+      description: Accès refusé (permissions insuffisantes)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  schemas:
+    # ============================================
+    # AUTH SCHEMAS
+    # ============================================
+    RegisterRequest:
+      type: object
+      required:
+        - nom
+        - prenom
+        - telephone
+        - password
+        - commune
+        - quartier
+        - adresseComplete
+      properties:
+        nom:
+          type: string
+          example: "Diop"
+        prenom:
+          type: string
+          example: "Fatou"
+        telephone:
+          type: string
+          pattern: '^(77|78|76|70|75)[0-9]{7}$'
+          example: "771234567"
+        email:
+          type: string
+          format: email
+          example: "fatou@example.com"
+        password:
+          type: string
+          format: password
+          minLength: 6
+        nomBoutique:
+          type: string
+          example: "Fatou Fashion"
+        categorieActivite:
+          type: string
+          example: "Vêtements"
+        instagram:
+          type: string
+          example: "@fatoufashion"
+        facebook:
+          type: string
+          example: "Fatou Fashion Page"
+        commune:
+          type: string
+          example: "Dakar"
+        quartier:
+          type: string
+          example: "Sacré-Coeur"
+        adresseComplete:
+          type: string
+          example: "Rue SC-23, Villa 45"
+
+    LoginRequest:
+      type: object
+      required:
+        - telephone
+        - password
+      properties:
+        telephone:
+          type: string
+          example: "771234567"
+        password:
+          type: string
+          format: password
+
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        refreshToken:
+          type: string
+        type:
+          type: string
+          example: "Bearer"
+        user:
+          $ref: '#/components/schemas/UserInfo'
+
+    UserInfo:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        nom:
+          type: string
+        prenom:
+          type: string
+        telephone:
+          type: string
+        email:
+          type: string
+        role:
+          $ref: '#/components/schemas/UserRole'
+        nomBoutique:
+          type: string
+
+    # ============================================
+    # LIVRAISON SCHEMAS
+    # ============================================
+    CreateLivraisonRequest:
+      type: object
+      required:
+        - nomClient
+        - telephoneClient
+        - commune
+        - quartier
+        - adresseComplete
+        - descriptionProduit
+        - montantCOD
+        - zoneId
+      properties:
+        nomClient:
+          type: string
+          example: "Aïssatou Ndiaye"
+        telephoneClient:
+          type: string
+          pattern: '^(77|78|76|70|75)[0-9]{7}$'
+          example: "772345678"
+        commune:
+          type: string
+          example: "Dakar"
+        quartier:
+          type: string
+          example: "Mermoz"
+        adresseComplete:
+          type: string
+          example: "Cité Biagui, Villa 45"
+        pointRepere:
+          type: string
+          example: "Face à la mosquée"
+        descriptionProduit:
+          type: string
+          example: "Ensemble wax"
+        fragile:
+          type: boolean
+          default: false
+        poids:
+          type: number
+          format: double
+          example: 1.5
+        montantCOD:
+          type: number
+          format: decimal
+          minimum: 1000
+          maximum: 10000000
+          example: 35000
+        zoneId:
+          type: integer
+          format: int64
+          example: 2
+        urgence:
+          $ref: '#/components/schemas/TypeUrgence'
+        creneauSouhaite:
+          type: string
+          enum: [MATIN, APRES_MIDI, SOIR]
+          example: "APRES_MIDI"
+        notesPourLivreur:
+          type: string
+          example: "Appeler avant d'arriver"
+
+    LivraisonResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        numeroTracking:
+          type: string
+          example: "DKR-00567"
+        qrCodeUrl:
+          type: string
+          example: "https://track.votreplateforme.sn/DKR-00567/deliver"
+        statut:
+          $ref: '#/components/schemas/StatutLivraison'
+        dateCreation:
+          type: string
+          format: date-time
+        fraisLivraison:
+          type: number
+          format: decimal
+          example: 1500
+        montantCOD:
+          type: number
+          format: decimal
+          example: 35000
+        montantARecevoir:
+          type: number
+          format: decimal
+          description: Montant COD - Frais livraison
+          example: 33500
+        message:
+          type: string
+          example: "Livraison créée avec succès ! Écrivez #DKR-00567 sur votre colis."
+
+    LivraisonDetailResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        numeroTracking:
+          type: string
+        qrCodeUrl:
+          type: string
+        statut:
+          $ref: '#/components/schemas/StatutLivraison'
+        dateCreation:
+          type: string
+          format: date-time
+        dateRamassage:
+          type: string
+          format: date-time
+        dateLivraison:
+          type: string
+          format: date-time
+        vendeur:
+          type: object
+          properties:
+            id:
+              type: integer
+              format: int64
+            nom:
+              type: string
+            prenom:
+              type: string
+            telephone:
+              type: string
+            nomBoutique:
+              type: string
+        client:
+          type: object
+          properties:
+            nom:
+              type: string
+            telephone:
+              type: string
+            adresse:
+              type: string
+            pointRepere:
+              type: string
+        produit:
+          type: object
+          properties:
+            description:
+              type: string
+            fragile:
+              type: boolean
+            poids:
+              type: number
+              format: double
+        financier:
+          type: object
+          properties:
+            montantCOD:
+              type: number
+              format: decimal
+            fraisLivraison:
+              type: number
+              format: decimal
+            cashCollecte:
+              type: number
+              format: decimal
+        zone:
+          type: string
+        urgence:
+          $ref: '#/components/schemas/TypeUrgence'
+        commentaireLivraison:
+          type: string
+
+    PageLivraison:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/LivraisonResponse'
+        page:
+          type: integer
+        size:
+          type: integer
+        totalElements:
+          type: integer
+        totalPages:
+          type: integer
+
+    # ============================================
+    # VENDEUR SCHEMAS
+    # ============================================
+    VendeurDashboard:
+      type: object
+      properties:
+        statistiquesJour:
+          type: object
+          properties:
+            totalColis:
+              type: integer
+              example: 12
+            colisLivres:
+              type: integer
+              example: 8
+            colisEnCours:
+              type: integer
+              example: 4
+        finances:
+          type: object
+          properties:
+            soldeEnAttente:
+              type: number
+              format: decimal
+              example: 145000
+            prochainPaiement:
+              type: string
+              description: "À la demande du vendeur"
+              example: "Sur demande"
+
+    VendeurFinances:
+      type: object
+      properties:
+        soldeEnAttente:
+          type: number
+          format: decimal
+          example: 387500
+        statistiquesMois:
+          type: object
+          properties:
+            nombreLivraisons:
+              type: integer
+              example: 45
+            caGenere:
+              type: number
+              format: decimal
+              example: 1250000
+            fraisLivraison:
+              type: number
+              format: decimal
+              example: 67500
+        historiquePaiements:
+          type: array
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+                format: date-time
+              montant:
+                type: number
+                format: decimal
+              reference:
+                type: string
+              statut:
+                type: string
+                enum: [EFFECTUE, EN_ATTENTE, ANNULE]
+
+    # ============================================
+    # ADMIN SCHEMAS
+    # ============================================
+    RamassageZone:
+      type: object
+      properties:
+        zone:
+          type: string
+          example: "Sacré-Coeur"
+        nombreColis:
+          type: integer
+          example: 8
+        vendeurs:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+                format: int64
+              nom:
+                type: string
+              prenom:
+                type: string
+              telephone:
+                type: string
+              adresse:
+                type: string
+              nombreColis:
+                type: integer
+              colis:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                      format: int64
+                    numeroTracking:
+                      type: string
+                    nomClient:
+                      type: string
+                    adresseClient:
+                      type: string
+                    montantCOD:
+                      type: number
+                      format: decimal
+
+    LivraisonZone:
+      type: object
+      properties:
+        zone:
+          type: string
+          example: "Mermoz"
+        nombreColis:
+          type: integer
+          example: 5
+        colis:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+                format: int64
+              numeroTracking:
+                type: string
+              nomClient:
+                type: string
+              telephoneClient:
+                type: string
+              adresse:
+                type: string
+              montantCOD:
+                type: number
+                format: decimal
+              vendeur:
+                type: string
+
+    AdminFinancesDashboard:
+      type: object
+      properties:
+        cashCollecte:
+          type: number
+          format: decimal
+          example: 2340000
+        aPayerVendeurs:
+          type: number
+          format: decimal
+          example: 2180000
+        commissions:
+          type: number
+          format: decimal
+          example: 160000
+        statistiques:
+          type: object
+          properties:
+            nombreLivraisons:
+              type: integer
+            nombreVendeurs:
+              type: integer
+            tauxReussite:
+              type: number
+              format: double
+
+    DemandePaiement:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        vendeur:
+          type: object
+          properties:
+            id:
+              type: integer
+              format: int64
+            nom:
+              type: string
+            prenom:
+              type: string
+            telephone:
+              type: string
+            nomBoutique:
+              type: string
+        montant:
+          type: number
+          format: decimal
+        nombreLivraisons:
+          type: integer
+        dateDemande:
+          type: string
+          format: date-time
+
+    PageTransaction:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+                format: int64
+              vendeur:
+                type: string
+              montant:
+                type: number
+                format: decimal
+              type:
+                type: string
+                enum: [PAIEMENT_VENDEUR, COLLECTE_COD, COMMISSION]
+              reference:
+                type: string
+              statut:
+                type: string
+                enum: [EFFECTUE, EN_ATTENTE, ANNULE]
+              date:
+                type: string
+                format: date-time
+        page:
+          type: integer
+        size:
+          type: integer
+        totalElements:
+          type: integer
+        totalPages:
+          type: integer
+
+    # ============================================
+    # DELIVERY SCHEMAS
+    # ============================================
+    DeliveryInfoResponse:
+      type: object
+      properties:
+        numeroTracking:
+          type: string
+          example: "DKR-00567"
+        client:
+          type: object
+          properties:
+            nom:
+              type: string
+              example: "Aïssatou Ndiaye"
+            telephone:
+              type: string
+              example: "772345678"
+            adresse:
+              type: string
+              example: "Mermoz, Cité Biagui, Villa 45"
+            pointRepere:
+              type: string
+              example: "Face à la mosquée"
+        produit:
+          type: object
+          properties:
+            description:
+              type: string
+              example: "Ensemble wax"
+            fragile:
+              type: boolean
+        vendeur:
+          type: object
+          properties:
+            nom:
+              type: string
+              example: "Fatou"
+        montantACollecter:
+          type: number
+          format: decimal
+          example: 35000
+
+    ConfirmLivraisonRequest:
+      type: object
+      required:
+        - cashCollecte
+        - colisRemis
+      properties:
+        cashCollecte:
+          type: number
+          format: decimal
+          example: 35000
+        colisRemis:
+          type: boolean
+          example: true
+        commentaire:
+          type: string
+          example: "Livraison OK, cliente satisfaite"
+
+    # ============================================
+    # TRACKING SCHEMA
+    # ============================================
+    TrackingResponse:
+      type: object
+      properties:
+        numeroTracking:
+          type: string
+          example: "DKR-00567"
+        statut:
+          $ref: '#/components/schemas/StatutLivraison'
+        destination:
+          type: string
+          example: "Mermoz"
+        montantAPayer:
+          type: number
+          format: decimal
+          example: 35000
+        timeline:
+          type: array
+          items:
+            type: object
+            properties:
+              etape:
+                type: string
+                enum: [COMMANDE_CREEE, COLIS_RECUPERE, EN_COURS_LIVRAISON, LIVRE]
+              date:
+                type: string
+                format: date-time
+              effectue:
+                type: boolean
+
+    # ============================================
+    # ZONE SCHEMAS
+    # ============================================
+    Zone:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        nom:
+          type: string
+          example: "Zone 2 - Sacré-Coeur, Mermoz"
+        description:
+          type: string
+        tarifStandard:
+          type: number
+          format: decimal
+          example: 1500
+        tarifExpress:
+          type: number
+          format: decimal
+          example: 2250
+
+    Quartier:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        nom:
+          type: string
+          example: "Mermoz"
+        commune:
+          type: string
+          example: "Dakar"
+        zone:
+          $ref: '#/components/schemas/Zone'
+
+    TarifResponse:
+      type: object
+      properties:
+        montant:
+          type: number
+          format: decimal
+          example: 1500
+        zone:
+          type: string
+        urgence:
+          $ref: '#/components/schemas/TypeUrgence'
+        detailCalcul:
+          type: object
+          properties:
+            tarifBase:
+              type: number
+              format: decimal
+            supplementPoids:
+              type: number
+              format: decimal
+            supplementUrgence:
+              type: number
+              format: decimal
+
+    # ============================================
+    # ENUMS
+    # ============================================
+    UserRole:
+      type: string
+      enum:
+        - VENDEUR
+        - ADMIN
+
+    StatutLivraison:
+      type: string
+      enum:
+        - EN_ATTENTE_RAMASSAGE
+        - RAMASSE
+        - EN_ROUTE
+        - LIVREE
+        - ECHEC_ABSENT
+        - ECHEC_REFUSE
+        - ANNULEE
+
+    TypeUrgence:
+      type: string
+      enum:
+        - NORMAL
+        - EXPRESS
+      default: NORMAL
+
+    # ============================================
+    # ERROR SCHEMA
+    # ============================================
+    ErrorResponse:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        status:
+          type: integer
+        error:
+          type: string
+        message:
+          type: string
+        path:
+          type: string
