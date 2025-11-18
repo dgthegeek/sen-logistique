@@ -94,7 +94,8 @@ public class Livraison {
      * Poids du colis en kg (optionnel)
      * Utilisé pour calculer un supplément si > 5kg ou > 10kg
      */
-    private Double poids;
+    @Column(name = "poids", precision = 10, scale = 2)
+    private BigDecimal poids;
 
     // ==================== FINANCES ====================
 
@@ -102,7 +103,7 @@ public class Livraison {
      * Montant Cash on Delivery (COD)
      * C'est ce que le client final doit payer
      */
-    @Column(nullable = false, precision = 12, scale = 2)
+    @Column(name = "montant_cod", nullable = false, precision = 12, scale = 2)
     private BigDecimal montantCOD;
 
     /**
@@ -183,12 +184,12 @@ public class Livraison {
     /**
      * Latitude GPS de la livraison (optionnel pour V1)
      */
-    private Double latitudeLivraison;
+    private BigDecimal latitudeLivraison;
 
     /**
      * Longitude GPS de la livraison (optionnel pour V1)
      */
-    private Double longitudeLivraison;
+    private BigDecimal longitudeLivraison;
 
     // ==================== MÉTHODES UTILITAIRES ====================
     public void setVendeur(Vendeur vendeur) {

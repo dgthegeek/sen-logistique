@@ -20,7 +20,6 @@ import lombok.*;
 @Getter
 @Setter
 @NoArgsConstructor
-@AllArgsConstructor
 public class Admin extends User {
     
     // Pour le MVP, Admin n'a pas de champs spécifiques
