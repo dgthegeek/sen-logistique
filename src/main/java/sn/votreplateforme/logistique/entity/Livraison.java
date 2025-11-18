@@ -1,0 +1,248 @@
+package sn.votreplateforme.logistique.entity;
+
+import jakarta.persistence.*;
+import lombok.*;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+/**
+ * Entité Livraison - Cœur du système
+ *
+ * Représente une livraison créée par un vendeur
+ * Cycle de vie : EN_ATTENTE_RAMASSAGE → RAMASSE → EN_ROUTE → LIVREE
+ */
+@Entity
+@Table(name = "livraisons")
+@EntityListeners(AuditingEntityListener.class)
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class Livraison {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    // ==================== TRACKING ====================
+
+    /**
+     * Numéro de tracking unique (ex: "DKR-00567")
+     * Généré automatiquement à la création
+     */
+    @Column(nullable = false, unique = true, length = 50)
+    private String numeroTracking;
+
+    /**
+     * URL du QR code pour la confirmation de livraison
+     * Ex: "https://track.votreplateforme.sn/DKR-00567/deliver"
+     */
+    @Column(length = 500)
+    private String qrCodeUrl;
+
+    // ==================== VENDEUR ====================
+
+    /**
+     * Vendeur qui a créé cette livraison
+     * Relation ManyToOne : Plusieurs livraisons appartiennent à un vendeur
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "vendeur_id", nullable = false)
+    private Vendeur vendeur;
+
+    // ==================== CLIENT FINAL ====================
+
+    /**
+     * Nom complet du client final (celui qui reçoit le colis)
+     */
+    @Column(nullable = false, length = 200)
+    private String nomClient;
+
+    /**
+     * Téléphone du client final
+     * Format: 77XXXXXXX, 78XXXXXXX, etc.
+     */
+    @Column(nullable = false, length = 20)
+    private String telephoneClient;
+
+    /**
+     * Adresse de destination (embeddable)
+     * Contient : commune, quartier, adresseComplete, pointRepere, zone
+     */
+    @Embedded
+    private Adresse adresseDestination;
+
+    // ==================== DÉTAILS DU COLIS ====================
+
+    /**
+     * Description du produit (ex: "Ensemble wax", "iPhone 13")
+     */
+    @Column(nullable = false, columnDefinition = "TEXT")
+    private String descriptionProduit;
+
+    /**
+     * Colis fragile ou non
+     */
+    @Column(nullable = false)
+    private Boolean fragile = false;
+
+    /**
+     * Poids du colis en kg (optionnel)
+     * Utilisé pour calculer un supplément si > 5kg ou > 10kg
+     */
+    private Double poids;
+
+    // ==================== FINANCES ====================
+
+    /**
+     * Montant Cash on Delivery (COD)
+     * C'est ce que le client final doit payer
+     */
+    @Column(nullable = false, precision = 12, scale = 2)
+    private BigDecimal montantCOD;
+
+    /**
+     * Frais de livraison
+     * Calculé automatiquement selon la zone et l'urgence
+     */
+    @Column(nullable = false, precision = 10, scale = 2)
+    private BigDecimal fraisLivraison;
+
+    /**
+     * Cash collecté lors de la livraison
+     * Doit normalement être égal à montantCOD
+     */
+    @Column(precision = 12, scale = 2)
+    private BigDecimal cashCollecte;
+
+    // ==================== STATUT & DATES ====================
+
+    /**
+     * Statut actuel de la livraison
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
+    private StatutLivraison statut = StatutLivraison.EN_ATTENTE_RAMASSAGE;
+
+    /**
+     * Date de création de la livraison (auto-générée)
+     */
+    @CreatedDate
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime dateCreation;
+
+    /**
+     * Date de ramassage (quand admin marque "RAMASSE")
+     */
+    private LocalDateTime dateRamassage;
+
+    /**
+     * Date de mise en route (quand admin part livrer)
+     */
+    private LocalDateTime dateEnRoute;
+
+    /**
+     * Date de livraison finale (quand admin confirme "LIVREE")
+     */
+    private LocalDateTime dateLivraison;
+
+    // ==================== OPTIONS ====================
+
+    /**
+     * Type d'urgence (NORMAL ou EXPRESS)
+     * Impact sur le tarif
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private TypeUrgence urgence = TypeUrgence.NORMAL;
+
+    /**
+     * Créneau souhaité (MATIN, APRES_MIDI, SOIR)
+     */
+    @Column(length = 20)
+    private String creneauSouhaite;
+
+    /**
+     * Notes pour le livreur (ex: "Appeler avant d'arriver")
+     */
+    @Column(length = 500)
+    private String notesPourLivreur;
+
+    // ==================== APRÈS LIVRAISON ====================
+
+    /**
+     * Commentaire après livraison (ex: "Livraison OK, cliente satisfaite")
+     */
+    @Column(columnDefinition = "TEXT")
+    private String commentaireLivraison;
+
+    /**
+     * Latitude GPS de la livraison (optionnel pour V1)
+     */
+    private Double latitudeLivraison;
+
+    /**
+     * Longitude GPS de la livraison (optionnel pour V1)
+     */
+    private Double longitudeLivraison;
+
+    // ==================== MÉTHODES UTILITAIRES ====================
+    public void setVendeur(Vendeur vendeur) {
+        this.vendeur = vendeur;
+    }
+
+    /**
+     * Calcule le montant que le vendeur va recevoir
+     * montantCOD - fraisLivraison
+     */
+    public BigDecimal getMontantVendeur() {
+        return montantCOD.subtract(fraisLivraison);
+    }
+
+    /**
+     * Vérifie si la livraison est terminée (livrée ou échouée)
+     */
+    public boolean estTerminee() {
+        return statut == StatutLivraison.LIVREE
+            || statut == StatutLivraison.ECHEC_ABSENT
+            || statut == StatutLivraison.ECHEC_REFUSE
+            || statut == StatutLivraison.ANNULEE;
+    }
+
+    /**
+     * Vérifie si la livraison a réussi
+     */
+    public boolean estReussie() {
+        return statut == StatutLivraison.LIVREE;
+    }
+
+    /**
+     * Marque la livraison comme ramassée
+     */
+    public void marquerRamasse() {
+        this.statut = StatutLivraison.RAMASSE;
+        this.dateRamassage = LocalDateTime.now();
+    }
+
+    /**
+     * Marque la livraison en route
+     */
+    public void marquerEnRoute() {
+        this.statut = StatutLivraison.EN_ROUTE;
+        this.dateEnRoute = LocalDateTime.now();
+    }
+
+    /**
+     * Marque la livraison comme livrée
+     */
+    public void marquerLivree(BigDecimal cashCollecte, String commentaire) {
+        this.statut = StatutLivraison.LIVREE;
+        this.dateLivraison = LocalDateTime.now();
+        this.cashCollecte = cashCollecte;
+        this.commentaireLivraison = commentaire;
+    }
+}
