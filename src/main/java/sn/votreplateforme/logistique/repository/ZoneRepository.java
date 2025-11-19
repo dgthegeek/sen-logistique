@@ -43,4 +43,5 @@ public interface ZoneRepository extends JpaRepository<Zone, Long> {
      * @return Nombre de zones actives
      */
     long countByActiveTrue();
+
 }

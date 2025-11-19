@@ -63,4 +63,10 @@ public interface QuartierRepository extends JpaRepository<Quartier, Long> {
      * @return Liste des quartiers triés par nom
      */
     List<Quartier> findAllByOrderByNomAsc();
+
+    /**
+     * Recherche de quartiers par nom (pour auto-complétion)
+     */
+    List<Quartier> findByNomContainingIgnoreCaseAndActifTrue(String recherche);
+
 }

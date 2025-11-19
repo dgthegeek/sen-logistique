@@ -43,10 +43,10 @@ public interface LivraisonRepository extends JpaRepository<Livraison, Long> {
     boolean existsByNumeroTracking(String numeroTracking);
     
     // ==================== RECHERCHE PAR VENDEUR ====================
-    
+
     /**
      * Trouve toutes les livraisons d'un vendeur
-     * 
+     *
      * @param vendeur Vendeur
      * @return Liste des livraisons du vendeur
      */
@@ -248,4 +248,14 @@ public interface LivraisonRepository extends JpaRepository<Livraison, Long> {
         @Param("fin") LocalDateTime fin,
         Pageable pageable
     );
+
+    /**
+     * Compte le nombre de livraisons dont le numéro de tracking commence par le préfixe donné
+     */
+    long countByNumeroTrackingStartingWith(String prefix);
+
+    /**
+     * Trouve les livraisons d'un vendeur avec un statut et pagination
+     */
+    Page<Livraison> findByVendeurAndStatut(Vendeur vendeur, StatutLivraison statut, Pageable pageable);
 }
