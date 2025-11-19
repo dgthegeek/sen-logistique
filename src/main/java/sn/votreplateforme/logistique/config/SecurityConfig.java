@@ -55,40 +55,40 @@ public class SecurityConfig {
                 // ==================== ENDPOINTS PUBLICS ====================
                 
                 // Authentication - Accessible sans connexion
-                .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/auth/**").permitAll()
                 
                 // Tracking public - Accessible sans connexion
                 .requestMatchers(HttpMethod.GET, "/tracking/**").permitAll()
                 
                 // Delivery (scan QR) - Accessible sans connexion
-                .requestMatchers("/api/delivery/**").permitAll()
+                .requestMatchers("/delivery/**").permitAll()
                 
                 // Zones et quartiers - Accessible sans connexion
-                .requestMatchers(HttpMethod.GET, "/api/zones/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/quartiers/**").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/tarifs/calculer").permitAll()
+                .requestMatchers(HttpMethod.GET, "/zones/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/quartiers/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/tarifs/calculer").permitAll()
                 
                 // Swagger UI - Accessible en développement
                 .requestMatchers(
                     "/swagger-ui/**",
-                    "/v3/api-docs/**",
+                    "/v3-docs/**",
                     "/swagger-ui.html",
                     "/swagger-resources/**",
                     "/webjars/**"
                 ).permitAll()
                 
                 // Actuator - Accessible
-                .requestMatchers("/api/actuator/**").permitAll()
+                .requestMatchers("/actuator/**").permitAll()
                 
                 // ==================== ENDPOINTS VENDEUR ====================
                 
                 // Endpoints vendeur - Nécessite rôle VENDEUR
-                .requestMatchers("/api/vendeur/**").hasRole("VENDEUR")
+                .requestMatchers("/vendeur/**").hasRole("VENDEUR")
                 
                 // ==================== ENDPOINTS ADMIN ====================
                 
                 // Endpoints admin - Nécessite rôle ADMIN
-                .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                .requestMatchers("/admin/**").hasRole("ADMIN")
                 
                 // ==================== AUTRES ====================
                 

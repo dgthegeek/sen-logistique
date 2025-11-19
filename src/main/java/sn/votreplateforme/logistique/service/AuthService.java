@@ -19,7 +19,6 @@ import sn.votreplateforme.logistique.repository.VendeurRepository;
 import sn.votreplateforme.logistique.security.JwtTokenProvider;
 
 import java.math.BigDecimal;
-import java.util.Collections;
 
 /**
  * Service d'authentification
@@ -83,17 +82,22 @@ public class AuthService {
 
         log.info("Nouveau vendeur inscrit avec succès: {} (ID: {})", request.getTelephone(), vendeur.getId());
 
-        // 5. Créer une Authentication pour générer le token JWT
-        Authentication authentication = new UsernamePasswordAuthenticationToken(
-                vendeur.getTelephone(),
-                null, // Le password n'est pas nécessaire ici
-                Collections.emptyList() // Pas besoin des authorities pour juste générer le token
+        // 5. Authentifier le vendeur via Spring Security (comme pour le login)
+        // Cela charge les UserDetails via UserDetailsService et crée une Authentication valide
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        request.getTelephone(),
+                        request.getPassword() // On utilise le mot de passe en clair (avant hash)
+                )
         );
 
-        // 6. Générer le token JWT
+        // 6. Mettre l'utilisateur dans le SecurityContext
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        // 7. Générer le token JWT
         String token = jwtTokenProvider.generateToken(authentication);
 
-        // 7. Créer la réponse
+        // 8. Créer la réponse
         return buildAuthResponse(vendeur, token);
     }
 
