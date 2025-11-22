@@ -69,4 +69,11 @@ public interface QuartierRepository extends JpaRepository<Quartier, Long> {
      */
     List<Quartier> findByNomContainingIgnoreCaseAndActifTrue(String recherche);
 
+    /**
+     * Compte le nombre de quartiers dans une zone
+     *
+     * @param zone La zone
+     * @return Nombre de quartiers
+     */
+    long countByZone(Zone zone);
 }

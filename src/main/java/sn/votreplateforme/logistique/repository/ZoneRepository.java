@@ -44,4 +44,12 @@ public interface ZoneRepository extends JpaRepository<Zone, Long> {
      */
     long countByActiveTrue();
 
+    /**
+     * Vérifie si une zone existe par son nom
+     *
+     * @param nom Nom de la zone
+     * @return true si la zone existe, false sinon
+     */
+    boolean existsByNom(String nom);
+
 }
