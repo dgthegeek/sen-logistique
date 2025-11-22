@@ -16,87 +16,63 @@ import java.util.Collection;
 import java.util.Collections;
 
 /**
- * Service de chargement des utilisateurs pour Spring Security
- * 
- * Implémente UserDetailsService qui est l'interface standard de Spring Security
- * pour charger les utilisateurs depuis une source de données
+ * Service qui charge les utilisateurs depuis la base de données pour Spring Security
+ * Fonctionne pour les VENDEURS et les ADMINS
  */
 @Service
-@RequiredArgsConstructor
 @Slf4j
+@RequiredArgsConstructor
 public class UserDetailsServiceImpl implements UserDetailsService {
-    
+
     private final UserRepository userRepository;
-    
+
     /**
-     * Charge un utilisateur par son téléphone (username)
-     * 
-     * Appelé automatiquement par Spring Security lors de l'authentification
-     * 
-     * @param telephone Numéro de téléphone (username)
-     * @return UserDetails contenant les infos de l'utilisateur
-     * @throws UsernameNotFoundException Si l'utilisateur n'existe pas
+     * Charge un utilisateur par son téléphone (username dans notre cas)
+     * Cherche dans la table users (parent) donc fonctionne pour vendeurs ET admins
      */
     @Override
     @Transactional(readOnly = true)
     public UserDetails loadUserByUsername(String telephone) throws UsernameNotFoundException {
-        log.debug("Chargement de l'utilisateur avec téléphone : {}", telephone);
-        
-        // 1. Chercher l'utilisateur dans la base de données
+        log.debug("Chargement de l'utilisateur: {}", telephone);
+
+        // ✅ CORRECTION : Chercher dans UserRepository au lieu de VendeurRepository
+        // Cela permet de charger les vendeurs ET les admins
         User user = userRepository.findByTelephone(telephone)
-                .orElseThrow(() -> new UsernameNotFoundException(
-                    "Utilisateur non trouvé avec le téléphone : " + telephone
-                ));
-        
-        // 2. Vérifier que le compte est actif
+                .orElseThrow(() -> {
+                    log.error("Utilisateur non trouvé: {}", telephone);
+                    return new UsernameNotFoundException("Utilisateur non trouvé avec le téléphone: " + telephone);
+                });
+
+        // Vérifier que le compte est actif
         if (!user.isActif()) {
-            throw new UsernameNotFoundException("Le compte est désactivé : " + telephone);
+            log.error("Compte désactivé: {}", telephone);
+            throw new UsernameNotFoundException("Ce compte a été désactivé");
         }
-        
-        // 3. Créer l'objet UserDetails de Spring Security
-        return buildUserDetails(user);
-    }
-    
-    /**
-     * Construit l'objet UserDetails à partir de notre entité User
-     * 
-     * @param user Notre entité User
-     * @return UserDetails pour Spring Security
-     */
-    private UserDetails buildUserDetails(User user) {
-        // Créer les autorités (rôles) de l'utilisateur
-        Collection<? extends GrantedAuthority> authorities = getAuthorities(user);
-        
-        // Retourner un UserDetails avec :
-        // - username = téléphone
-        // - password = mot de passe hashé
-        // - authorities = rôles
-        // - flags d'état du compte
+
+        log.debug("Utilisateur trouvé: {} {} - Rôle: {}",
+                user.getPrenom(), user.getNom(), user.getRole());
+
+        // Créer et retourner le UserDetails
         return org.springframework.security.core.userdetails.User.builder()
                 .username(user.getTelephone())
                 .password(user.getPassword())
-                .authorities(authorities)
+                .authorities(getAuthorities(user))
                 .accountExpired(false)
                 .accountLocked(false)
                 .credentialsExpired(false)
                 .disabled(!user.isActif())
                 .build();
     }
-    
+
     /**
-     * Crée les autorités (rôles) de l'utilisateur
-     * 
-     * Spring Security utilise le préfixe "ROLE_" par convention
-     * 
-     * @param user Notre entité User
-     * @return Collection d'autorités
+     * Construit les autorités (rôles) de l'utilisateur
      */
     private Collection<? extends GrantedAuthority> getAuthorities(User user) {
-        // Convertir notre enum UserRole en GrantedAuthority de Spring Security
-        // VENDEUR → ROLE_VENDEUR
-        // ADMIN → ROLE_ADMIN
-        String roleName = "ROLE_" + user.getRole().name();
-        
-        return Collections.singletonList(new SimpleGrantedAuthority(roleName));
+        // Spring Security utilise le préfixe "ROLE_" par convention
+        String authority = "ROLE_" + user.getRole().name();
+
+        log.debug("Autorité attribuée: {}", authority);
+
+        return Collections.singletonList(new SimpleGrantedAuthority(authority));
     }
 }

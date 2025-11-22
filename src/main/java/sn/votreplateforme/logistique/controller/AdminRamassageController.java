@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RestController;
 import sn.votreplateforme.logistique.api.AdminRamassagesApi;
 import sn.votreplateforme.logistique.dto.*;
@@ -40,6 +41,7 @@ public class AdminRamassageController implements AdminRamassagesApi {
      * Liste de tous les ramassages groupés par zone
      */
     @Override
+    @Transactional(readOnly = true)
     public ResponseEntity<AdminRamassagesGet200Response> adminRamassagesGet(LocalDate date, String zone) {
         log.info("=== Requête liste ramassages admin ===");
         log.debug("Date: {}, Zone: {}", date, zone);
@@ -94,6 +96,7 @@ public class AdminRamassageController implements AdminRamassagesApi {
      * Ramassages du jour groupés par zone
      */
     @Override
+    @Transactional(readOnly = true)
     public ResponseEntity<AdminRamassagesTodayGet200Response> adminRamassagesTodayGet() {
         log.info("=== Requête ramassages du jour ===");
         

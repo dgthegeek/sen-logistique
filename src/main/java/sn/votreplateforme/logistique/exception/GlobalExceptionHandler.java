@@ -147,7 +147,46 @@ public class GlobalExceptionHandler {
             .status(HttpStatus.NOT_IMPLEMENTED)
             .body(errorResponse);
     }
-    
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleResourceNotFound(
+            ResourceNotFoundException ex,
+            WebRequest request) {
+
+        log.warn("Ressource introuvable: {}", ex.getMessage());
+
+        ErrorResponse errorResponse = new ErrorResponse();
+        errorResponse.setTimestamp(OffsetDateTime.now());
+        errorResponse.setStatus(HttpStatus.NOT_FOUND.value());
+        errorResponse.setError("Not Found");
+        errorResponse.setMessage(ex.getMessage());
+        errorResponse.setPath(request.getDescription(false).replace("uri=", ""));
+
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(errorResponse);
+    }
+
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<ErrorResponse> handleBusinessException(
+            BusinessException ex,
+            WebRequest request) {
+
+        log.warn("Erreur métier: {}", ex.getMessage());
+
+        ErrorResponse errorResponse = new ErrorResponse();
+        errorResponse.setTimestamp(OffsetDateTime.now());
+        errorResponse.setStatus(HttpStatus.BAD_REQUEST.value());
+        errorResponse.setError("Business Error");
+        errorResponse.setMessage(ex.getMessage());
+        errorResponse.setPath(request.getDescription(false).replace("uri=", ""));
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(errorResponse);
+    }
+
+
     /**
      * Gestion de toutes les autres exceptions
      * Retourne 500 Internal Server Error

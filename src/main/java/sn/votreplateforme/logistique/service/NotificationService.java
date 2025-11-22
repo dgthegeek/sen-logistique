@@ -4,153 +4,236 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+
 /**
  * Service de notifications WhatsApp
  * Utilise Twilio WhatsApp API pour envoyer des messages
- * 
- * Note: Pour l'instant, les notifications sont simulées (logs uniquement)
- * L'intégration réelle avec Twilio sera faite plus tard
+ *
+ * Note: Pour l'instant, les notifications sont simulÃ©es (logs uniquement)
+ * L'intÃ©gration rÃ©elle avec Twilio sera faite plus tard
  */
 @Service
 @Slf4j
 public class NotificationService {
-    
+
     @Value("${twilio.enabled:false}")
     private boolean twilioEnabled;
-    
+
     @Value("${twilio.whatsapp.from:whatsapp:+14155238886}")
     private String whatsappFrom;
-    
+
     /**
-     * Envoie une notification WhatsApp à un vendeur pour le ramassage
-     * 
-     * @param telephoneVendeur Numéro du vendeur (format: 771234567)
-     * @param message Message à envoyer
+     * Envoie une notification WhatsApp Ã  un vendeur pour le ramassage
+     *
+     * @param telephoneVendeur NumÃ©ro du vendeur (format: 771234567)
+     * @param message Message Ã  envoyer
      */
     public void envoyerNotificationRamassage(String telephoneVendeur, String message) {
-        log.info("📱 Notification ramassage - Destinataire: {}", telephoneVendeur);
-        
+        log.info("ðŸ“± Notification ramassage - Destinataire: {}", telephoneVendeur);
+
         if (!twilioEnabled) {
-            log.warn("⚠️ Twilio désactivé - Simulation d'envoi WhatsApp");
-            log.info("📩 Message simulé: {}", message);
+            log.warn("âš ï¸ Twilio dÃ©sactivÃ© - Simulation d'envoi WhatsApp");
+            log.info("ðŸ“© Message simulÃ©: {}", message);
             return;
         }
-        
-        // TODO: Implémenter l'envoi réel via Twilio
+
+        // TODO: ImplÃ©menter l'envoi rÃ©el via Twilio
         String to = "whatsapp:+221" + telephoneVendeur;
-        
-        log.info("📤 Envoi WhatsApp à: {}", to);
+
+        log.info("ðŸ“¤ Envoi WhatsApp Ã : {}", to);
         log.debug("Message: {}", message);
-        
-        // Code d'intégration Twilio à ajouter ici
+
+        // Code d'intÃ©gration Twilio Ã  ajouter ici
         // Message twilioMessage = Message.creator(
         //     new PhoneNumber(to),
         //     new PhoneNumber(whatsappFrom),
         //     message
         // ).create();
-        
-        log.info("✅ Notification envoyée (simulation)");
+
+        log.info("âœ… Notification envoyÃ©e (simulation)");
     }
-    
+
     /**
      * Envoie une notification WhatsApp au client final
-     * 
-     * @param telephoneClient Numéro du client
-     * @param message Message à envoyer
+     *
+     * @param telephoneClient NumÃ©ro du client
+     * @param message Message Ã  envoyer
      */
     public void envoyerNotificationClient(String telephoneClient, String message) {
-        log.info("📱 Notification client - Destinataire: {}", telephoneClient);
-        
+        log.info("ðŸ“± Notification client - Destinataire: {}", telephoneClient);
+
         if (!twilioEnabled) {
-            log.warn("⚠️ Twilio désactivé - Simulation d'envoi WhatsApp");
-            log.info("📩 Message simulé: {}", message);
+            log.warn("âš ï¸ Twilio dÃ©sactivÃ© - Simulation d'envoi WhatsApp");
+            log.info("ðŸ“© Message simulÃ©: {}", message);
             return;
         }
-        
+
         String to = "whatsapp:+221" + telephoneClient;
-        
-        log.info("📤 Envoi WhatsApp à: {}", to);
+
+        log.info("ðŸ“¤ Envoi WhatsApp Ã : {}", to);
         log.debug("Message: {}", message);
-        
-        // TODO: Implémenter l'envoi réel via Twilio
-        
-        log.info("✅ Notification envoyée (simulation)");
+
+        // TODO: ImplÃ©menter l'envoi rÃ©el via Twilio
+
+        log.info("âœ… Notification envoyÃ©e (simulation)");
     }
-    
+
     /**
-     * Construit le message de notification pour ramassage groupé
-     * 
-     * @param nombreColis Nombre de colis à ramasser
-     * @param heureRamassage Heure prévue (ex: "15h")
-     * @param numerosSuivi Liste des numéros de suivi
-     * @return Message formaté
+     * Construit le message de notification pour ramassage groupÃ©
+     *
+     * @param nombreColis Nombre de colis Ã  ramasser
+     * @param heureRamassage Heure prÃ©vue (ex: "15h")
+     * @param numerosSuivi Liste des numÃ©ros de suivi
+     * @return Message formatÃ©
      */
     public String construireMessageRamassage(int nombreColis, String heureRamassage, String numerosSuivi) {
         if (nombreColis == 1) {
             return String.format(
-                "🚚 Ramassage prévu aujourd'hui vers %s.\n\n" +
-                "Préparez votre colis:\n%s\n\n" +
-                "Merci ! 📦",
-                heureRamassage,
-                numerosSuivi
+                    "ðŸšš Ramassage prÃ©vu aujourd'hui vers %s.\n\n" +
+                            "PrÃ©parez votre colis:\n%s\n\n" +
+                            "Merci ! ðŸ“¦",
+                    heureRamassage,
+                    numerosSuivi
             );
         } else {
             return String.format(
-                "🚚 Ramassage prévu aujourd'hui vers %s.\n\n" +
-                "Préparez vos %d colis:\n%s\n\n" +
-                "Merci ! 📦",
-                heureRamassage,
-                nombreColis,
-                numerosSuivi
+                    "ðŸšš Ramassage prÃ©vu aujourd'hui vers %s.\n\n" +
+                            "PrÃ©parez vos %d colis:\n%s\n\n" +
+                            "Merci ! ðŸ“¦",
+                    heureRamassage,
+                    nombreColis,
+                    numerosSuivi
             );
         }
     }
-    
+
     /**
-     * Construit le message de notification après ramassage
-     * 
-     * @param numeroTracking Numéro de suivi
-     * @return Message formaté
+     * Construit le message de notification aprÃ¨s ramassage
+     *
+     * @param numeroTracking NumÃ©ro de suivi
+     * @return Message formatÃ©
      */
     public String construireMessageApresRamassage(String numeroTracking) {
         return String.format(
-            "✅ Votre colis %s a été récupéré avec succès !\n\n" +
-            "Il sera livré dans les prochaines 24-48h.\n\n" +
-            "Merci de votre confiance ! 💚",
-            numeroTracking
+                "âœ… Votre colis %s a Ã©tÃ© rÃ©cupÃ©rÃ© avec succÃ¨s !\n\n" +
+                        "Il sera livrÃ© dans les prochaines 24-48h.\n\n" +
+                        "Merci de votre confiance ! ðŸ’š",
+                numeroTracking
         );
     }
-    
+
     /**
-     * Construit le message de notification pour le client après ramassage
-     * 
-     * @param numeroTracking Numéro de suivi
+     * Construit le message de notification pour le client aprÃ¨s ramassage
+     *
+     * @param numeroTracking NumÃ©ro de suivi
      * @param urlTracking URL de suivi
-     * @return Message formaté
+     * @return Message formatÃ©
      */
     public String construireMessageClientRamassage(String numeroTracking, String urlTracking) {
         return String.format(
-            "📦 Votre colis %s a été récupéré !\n\n" +
-            "Livraison prévue demain.\n\n" +
-            "Suivez votre colis: %s\n\n" +
-            "À bientôt ! 😊",
-            numeroTracking,
-            urlTracking
+                "ðŸ“¦ Votre colis %s a Ã©tÃ© rÃ©cupÃ©rÃ© !\n\n" +
+                        "Livraison prÃ©vue demain.\n\n" +
+                        "Suivez votre colis: %s\n\n" +
+                        "Ã€ bientÃ´t ! ðŸ˜Š",
+                numeroTracking,
+                urlTracking
         );
     }
-    
+
     /**
      * Construit le message de confirmation de livraison
-     * 
-     * @param numeroTracking Numéro de suivi
-     * @return Message formaté
+     *
+     * @param numeroTracking NumÃ©ro de suivi
+     * @return Message formatÃ©
      */
     public String construireMessageLivraison(String numeroTracking) {
         return String.format(
-            "✅ Votre colis %s a été livré avec succès !\n\n" +
-            "Merci pour votre achat ! 🎉\n\n" +
-            "À bientôt ! 😊",
-            numeroTracking
+                "âœ… Votre colis %s a Ã©tÃ© livrÃ© avec succÃ¨s !\n\n" +
+                        "Merci pour votre achat ! ðŸŽ‰\n\n" +
+                        "Ã€ bientÃ´t ! ðŸ˜Š",
+                numeroTracking
         );
+    }
+
+    // MÃ‰THODES Ã€ AJOUTER DANS NotificationService.java
+
+    /**
+     * Construit le message de confirmation de livraison pour le vendeur
+     *
+     * @param numeroTracking NumÃ©ro de suivi
+     * @param montantARecevoir Montant que le vendeur va recevoir
+     * @return Message formatÃ©
+     */
+    public String construireMessageLivraisonVendeur(String numeroTracking, java.math.BigDecimal montantARecevoir) {
+        return String.format(
+                "âœ… Votre colis %s a Ã©tÃ© livrÃ© avec succÃ¨s !\n\n" +
+                        "Vous recevrez %,.0f FCFA dans votre prochain paiement.\n\n" +
+                        "Merci de votre confiance ! ðŸ’š",
+                numeroTracking,
+                montantARecevoir
+        );
+    }
+
+    // AJOUTS Ã€ FAIRE DANS NotificationService.java
+// (Ajouter ces mÃ©thodes Ã  la fin de ton NotificationService existant)
+
+    /**
+     * Envoie une notification au vendeur aprÃ¨s livraison rÃ©ussie
+     *
+     * @param telephone TÃ©lÃ©phone du vendeur
+     * @param numeroTracking NumÃ©ro de tracking
+     * @param montantARecevoir Montant que le vendeur va recevoir
+     */
+    public void envoyerNotificationVendeurLivraison(
+            String telephone,
+            String numeroTracking,
+            BigDecimal montantARecevoir
+    ) {
+        String message = String.format(
+                "âœ… Votre colis %s a Ã©tÃ© livrÃ© avec succÃ¨s !\n\n" +
+                        "Vous recevrez %s FCFA lors du prochain paiement.\n\n" +
+                        "Merci de votre confiance ! ðŸ’š",
+                numeroTracking,
+                formatMontant(montantARecevoir)
+        );
+
+        //envoyerWhatsApp(telephone, message);
+
+        log.info("ðŸ“± Notification vendeur (livraison) envoyÃ©e: {} - {}",
+                telephone, numeroTracking);
+    }
+
+    /**
+     * Envoie une notification au client aprÃ¨s livraison rÃ©ussie
+     *
+     * @param telephone TÃ©lÃ©phone du client
+     * @param numeroTracking NumÃ©ro de tracking
+     */
+    public void envoyerNotificationClientLivraison(
+            String telephone,
+            String numeroTracking
+    ) {
+        String message = String.format(
+                "âœ… Votre colis %s a Ã©tÃ© livrÃ© avec succÃ¨s !\n\n" +
+                        "Merci pour votre achat ! ðŸŽ‰\n\n" +
+                        "Ã€ bientÃ´t ! ðŸ˜Š",
+                numeroTracking
+        );
+
+        //envoyerWhatsApp(telephone, message);
+
+        log.info("ðŸ“± Notification client (livraison) envoyÃ©e: {} - {}",
+                telephone, numeroTracking);
+    }
+
+    /**
+     * Formate un montant en FCFA avec sÃ©parateurs de milliers
+     *
+     * @param montant Montant Ã  formater
+     * @return Montant formatÃ© (ex: "35,000")
+     */
+    private String formatMontant(BigDecimal montant) {
+        return String.format("%,d", montant.longValue()).replace(',', ' ');
     }
 }

@@ -13,8 +13,10 @@ import sn.votreplateforme.logistique.dto.AuthResponse;
 import sn.votreplateforme.logistique.dto.LoginRequest;
 import sn.votreplateforme.logistique.dto.RegisterRequest;
 import sn.votreplateforme.logistique.dto.UserInfo;
+import sn.votreplateforme.logistique.entity.User;
 import sn.votreplateforme.logistique.entity.UserRole;
 import sn.votreplateforme.logistique.entity.Vendeur;
+import sn.votreplateforme.logistique.repository.UserRepository;
 import sn.votreplateforme.logistique.repository.VendeurRepository;
 import sn.votreplateforme.logistique.security.JwtTokenProvider;
 
@@ -22,7 +24,7 @@ import java.math.BigDecimal;
 
 /**
  * Service d'authentification
- * Gère l'inscription des vendeurs et la connexion (login)
+ * Gère l'inscription des vendeurs et la connexion (login) pour vendeurs ET admins
  */
 @Service
 @Slf4j
@@ -30,6 +32,7 @@ import java.math.BigDecimal;
 public class AuthService {
 
     private final VendeurRepository vendeurRepository;
+    private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final AuthenticationManager authenticationManager;
@@ -42,13 +45,13 @@ public class AuthService {
         log.info("Tentative d'inscription pour le téléphone: {}", request.getTelephone());
 
         // 1. Vérifier que le téléphone n'existe pas déjà
-        if (vendeurRepository.findByTelephone(request.getTelephone()).isPresent()) {
+        if (userRepository.findByTelephone(request.getTelephone()).isPresent()) {
             throw new IllegalArgumentException("Un compte existe déjà avec ce numéro de téléphone");
         }
 
         // 2. Vérifier que l'email n'existe pas (si fourni)
         if (request.getEmail() != null && !request.getEmail().isEmpty()) {
-            if (vendeurRepository.findByEmail(request.getEmail()).isPresent()) {
+            if (userRepository.findByEmail(request.getEmail()).isPresent()) {
                 throw new IllegalArgumentException("Un compte existe déjà avec cet email");
             }
         }
@@ -103,6 +106,7 @@ public class AuthService {
 
     /**
      * Connexion (login)
+     * Fonctionne pour les VENDEURS et les ADMINS
      */
     @Transactional(readOnly = true)
     public AuthResponse login(LoginRequest request) {
@@ -119,37 +123,47 @@ public class AuthService {
         // 2. Mettre l'utilisateur dans le SecurityContext
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        // 3. Récupérer le vendeur
-        Vendeur vendeur = vendeurRepository.findByTelephone(request.getTelephone())
+        // 3. Récupérer l'utilisateur (vendeur OU admin)
+        // CORRECTION : Utiliser UserRepository au lieu de VendeurRepository
+        User user = userRepository.findByTelephone(request.getTelephone())
                 .orElseThrow(() -> new IllegalArgumentException("Utilisateur non trouvé"));
 
         // 4. Vérifier que le compte est actif
-        if (!vendeur.isActif()) {
+        if (!user.isActif()) {
             throw new IllegalArgumentException("Ce compte a été désactivé. Contactez l'administrateur.");
         }
 
-        log.info("Connexion réussie pour: {} (ID: {})", request.getTelephone(), vendeur.getId());
+        log.info("Connexion réussie pour: {} (ID: {}, Rôle: {})",
+                request.getTelephone(), user.getId(), user.getRole());
 
         // 5. Générer le token JWT avec l'objet Authentication
         String token = jwtTokenProvider.generateToken(authentication);
 
         // 6. Créer la réponse
-        return buildAuthResponse(vendeur, token);
+        return buildAuthResponse(user, token);
     }
 
     /**
      * Construire la réponse d'authentification
+     * Fonctionne pour les vendeurs ET les admins
      */
-    private AuthResponse buildAuthResponse(Vendeur vendeur, String token) {
+    private AuthResponse buildAuthResponse(User user, String token) {
         // Créer UserInfo
         UserInfo userInfo = new UserInfo();
-        userInfo.setId(vendeur.getId());
-        userInfo.setNom(vendeur.getNom());
-        userInfo.setPrenom(vendeur.getPrenom());
-        userInfo.setTelephone(vendeur.getTelephone());
-        userInfo.setEmail(vendeur.getEmail());
-        userInfo.setRole(sn.votreplateforme.logistique.dto.UserRole.VENDEUR);
-        userInfo.setNomBoutique(vendeur.getNomBoutique());
+        userInfo.setId(user.getId());
+        userInfo.setNom(user.getNom());
+        userInfo.setPrenom(user.getPrenom());
+        userInfo.setTelephone(user.getTelephone());
+        userInfo.setEmail(user.getEmail());
+
+        // Convertir l'Entity UserRole en DTO UserRole
+        userInfo.setRole(sn.votreplateforme.logistique.dto.UserRole.valueOf(user.getRole().name()));
+
+        // Si c'est un vendeur, ajouter le nom de boutique
+        if (user instanceof Vendeur) {
+            Vendeur vendeur = (Vendeur) user;
+            userInfo.setNomBoutique(vendeur.getNomBoutique());
+        }
 
         // Créer AuthResponse
         AuthResponse response = new AuthResponse();
