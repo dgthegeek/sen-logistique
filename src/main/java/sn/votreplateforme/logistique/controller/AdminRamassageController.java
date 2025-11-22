@@ -88,7 +88,32 @@ public class AdminRamassageController implements AdminRamassagesApi {
 
     @Override
     public ResponseEntity<AdminRamassagesMarquerRamassePost200Response> adminRamassagesMarquerRamassePost(AdminRamassagesMarquerRamassePostRequest adminRamassagesMarquerRamassePostRequest) {
-        return null;
+        log.info("=== Requête marquage ramassé ===");
+
+        try {
+
+
+            List<Long> livraisonIds = adminRamassagesMarquerRamassePostRequest.getLivraisonIds();
+
+            if (livraisonIds == null || livraisonIds.isEmpty()) {
+                throw new IllegalArgumentException("Liste livraisonIds vide");
+            }
+
+            // Marquer comme ramassés
+            int colisRamasses = ramassageService.marquerCommeRamasse(livraisonIds);
+
+            AdminRamassagesMarquerRamassePost200Response response = new AdminRamassagesMarquerRamassePost200Response();
+            response.setColisRamasses(colisRamasses);
+            response.setMessage(colisRamasses + " colis marqué(s) comme ramassé(s)");
+            log.info("✅ {} colis marqués comme ramassés", colisRamasses);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            log.error("❌ Erreur de validation: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("❌ Erreur lors du marquage ramassé", e);
+            throw new RuntimeException("Erreur: " + e.getMessage());
+        }
     }
 
     /**

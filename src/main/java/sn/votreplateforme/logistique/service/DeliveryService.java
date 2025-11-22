@@ -39,6 +39,7 @@ public class DeliveryService {
      * @param numeroTracking NumÃ©ro de tracking
      * @return DeliveryInfoResponse avec toutes les infos prÃ©-remplies
      */
+    @Transactional(readOnly = true)
     public DeliveryInfoResponse getDeliveryInfo(String numeroTracking) {
         log.info("RÃ©cupÃ©ration infos delivery pour: {}", numeroTracking);
 
