@@ -258,4 +258,22 @@ public interface LivraisonRepository extends JpaRepository<Livraison, Long> {
      * Trouve les livraisons d'un vendeur avec un statut et pagination
      */
     Page<Livraison> findByVendeurAndStatut(Vendeur vendeur, StatutLivraison statut, Pageable pageable);
+
+    /**
+     * Trouve les livraisons par statut et période de livraison
+     */
+    List<Livraison> findByStatutAndDateLivraisonBetween(
+            StatutLivraison statut,
+            LocalDateTime dateDebut,
+            LocalDateTime dateFin
+    );
+
+    /**
+     * Trouve la première livraison d'un vendeur par statut, triée par date
+     */
+    Optional<Livraison> findFirstByVendeurAndStatutOrderByDateLivraisonAsc(
+            Vendeur vendeur,
+            StatutLivraison statut
+    );
+
 }

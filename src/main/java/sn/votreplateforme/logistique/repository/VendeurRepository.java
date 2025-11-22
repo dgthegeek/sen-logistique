@@ -79,4 +79,11 @@ public interface VendeurRepository extends JpaRepository<Vendeur, Long> {
      */
     @Query("SELECT COALESCE(SUM(v.soldeEnAttente), 0) FROM Vendeur v WHERE v.actif = true")
     BigDecimal calculerSoldeTotalEnAttente();
+
+    /**
+     * Trouve les vendeurs ayant un solde en attente supérieur à un montant
+     */
+    List<Vendeur> findBySoldeEnAttenteGreaterThan(BigDecimal montant);
+
+
 }

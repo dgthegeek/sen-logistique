@@ -204,4 +204,31 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
         @Param("fin") LocalDateTime fin,
         Pageable pageable
     );
+    
+    /**
+     * Trouve les transactions par vendeur et période
+     */
+    Page<Transaction> findByVendeurAndDateTransactionBetween(
+            Vendeur vendeur,
+            LocalDateTime dateDebut,
+            LocalDateTime dateFin,
+            Pageable pageable
+    );
+
+    /**
+     * Trouve les transactions par période
+     */
+    Page<Transaction> findByDateTransactionBetween(
+            LocalDateTime dateDebut,
+            LocalDateTime dateFin,
+            Pageable pageable
+    );
+
+    /**
+     * Compte les transactions dans une période
+     */
+    long countByDateTransactionBetween(
+            LocalDateTime dateDebut,
+            LocalDateTime dateFin
+    );
 }
