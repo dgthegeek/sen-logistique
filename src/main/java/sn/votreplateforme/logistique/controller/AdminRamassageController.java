@@ -3,14 +3,19 @@ package sn.votreplateforme.logistique.controller;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RestController;
 import sn.votreplateforme.logistique.api.AdminRamassagesApi;
 import sn.votreplateforme.logistique.dto.*;
 import sn.votreplateforme.logistique.entity.Livraison;
+import sn.votreplateforme.logistique.service.QRCodePdfService;
 import sn.votreplateforme.logistique.service.RamassageService;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
 
 import java.time.LocalDate;
 import java.util.HashMap;
@@ -35,6 +40,7 @@ import java.util.stream.Collectors;
 public class AdminRamassageController implements AdminRamassagesApi {
     
     private final RamassageService ramassageService;
+    private final QRCodePdfService qrCodePdfService;
     
     /**
      * GET /admin/ramassages
@@ -81,12 +87,58 @@ public class AdminRamassageController implements AdminRamassagesApi {
         }
     }
 
+    /**
+     * POST /admin/ramassages/imprimer-qr
+     * Génère un PDF avec les QR codes des colis
+     */
     @Override
     public ResponseEntity<Resource> adminRamassagesImprimerQrPost(AdminRamassagesImprimerQrPostRequest adminRamassagesImprimerQrPostRequest) {
-        return null;
+        log.info("Génération du PDF avec QR codes");
+
+        try {
+
+            List<Long> livraisonIds = adminRamassagesImprimerQrPostRequest.getLivraisonIds();
+
+            if (livraisonIds == null || livraisonIds.isEmpty()) {
+                log.error("Liste de livraisonIds vide ou manquante");
+                return ResponseEntity.badRequest().build();
+            }
+
+            log.info("Génération PDF pour {} livraisons", livraisonIds.size());
+
+            // Générer le PDF
+            byte[] pdfBytes = qrCodePdfService.generateQRCodesPdf(livraisonIds);
+
+            // Nom du fichier avec la date
+            String filename = String.format("qr-codes-%s.pdf",
+                    LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+
+            // Convertir bytes en Resource
+            ByteArrayResource resource = new ByteArrayResource(pdfBytes);
+
+            // Headers pour le téléchargement
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            headers.setContentDispositionFormData("attachment", filename);
+            headers.setContentLength(pdfBytes.length);
+
+            log.info("PDF généré avec succès : {} bytes", pdfBytes.length);
+
+            return ResponseEntity
+                    .ok()
+                    .headers(headers)
+                    .body(resource);
+
+        } catch (Exception e) {
+            log.error("Erreur lors de la génération du PDF", e);
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .build();
+        }
     }
 
-    @Override
+
+@Override
     public ResponseEntity<AdminRamassagesMarquerRamassePost200Response> adminRamassagesMarquerRamassePost(AdminRamassagesMarquerRamassePostRequest adminRamassagesMarquerRamassePostRequest) {
         log.info("=== Requête marquage ramassé ===");
 
