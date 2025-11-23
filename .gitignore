@@ -36,3 +36,5 @@ application-prod.yml
 
 # Generated files
 /src/main/generated/
+
+.env
