@@ -1,0 +1,58 @@
+# ============================================
+# .dockerignore
+# Fichiers à EXCLURE du contexte Docker
+# ============================================
+
+# Maven / Build
+target/
+!target/*.jar
+.mvn/
+mvnw
+mvnw.cmd
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Git
+.git/
+.gitignore
+
+# CI/CD
+.github/
+
+# Docker
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# Documentation
+README.md
+*.md
+docs/
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environnement
+.env
+.env.*
+
+# Tests
+test-results/
+coverage/
+
+# Scripts
+scripts/
+
+# Fichiers sensibles
+*.key
+*.pem
+*.crt
+secrets/

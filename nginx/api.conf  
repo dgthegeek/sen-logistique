@@ -1,0 +1,97 @@
+# ============================================
+# NGINX CONFIGURATION
+# Reverse Proxy pour l'API Spring Boot
+# ============================================
+
+# Upstream vers l'application Docker
+upstream sen_logistique_api {
+    server localhost:8080;
+    keepalive 32;
+}
+
+# Configuration du serveur
+server {
+    # Port d'écoute
+    listen 80;
+    listen [::]:80;
+
+    # Nom de domaine (remplacer par ton domaine si tu en as un)
+    server_name 207.154.211.118;
+
+    # Logs
+    access_log /var/log/nginx/sen-logistique-access.log;
+    error_log /var/log/nginx/sen-logistique-error.log;
+
+    # Taille max des requêtes (pour les uploads)
+    client_max_body_size 10M;
+
+    # ==========================================
+    # Proxy vers l'API Spring Boot
+    # ==========================================
+    location /api/ {
+        # Proxy vers le container Docker
+        proxy_pass http://sen_logistique_api;
+
+        # Headers pour que Spring Boot connaisse l'IP réelle
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # Timeouts
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+
+        # Buffering
+        proxy_buffering off;
+
+        # WebSocket support (au cas où)
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+
+    # ==========================================
+    # Page par défaut (racine)
+    # ==========================================
+    location = / {
+        return 200 '{"status":"OK","message":"Sen Logistique API","version":"1.0.0","documentation":"/api/swagger-ui.html"}';
+        add_header Content-Type application/json;
+    }
+
+    # ==========================================
+    # Health check endpoint
+    # ==========================================
+    location /health {
+        access_log off;
+        return 200 "healthy\n";
+        add_header Content-Type text/plain;
+    }
+}
+
+# ============================================
+# NOTES IMPORTANTES
+# ============================================
+#
+# 1. Installation:
+#    sudo cp nginx/api.conf /etc/nginx/sites-available/sen-logistique
+#    sudo ln -s /etc/nginx/sites-available/sen-logistique /etc/nginx/sites-enabled/
+#    sudo nginx -t
+#    sudo systemctl reload nginx
+#
+# 2. URLs disponibles:
+#    - http://207.154.211.118/api/swagger-ui.html
+#    - http://207.154.211.118/api/zones
+#    - http://207.154.211.118/health
+#
+# 3. HTTPS (plus tard):
+#    - Obtenir un nom de domaine
+#    - Installer certbot
+#    - Générer certificat SSL
+#
+# 4. Logs:
+#    - Access: /var/log/nginx/sen-logistique-access.log
+#    - Error: /var/log/nginx/sen-logistique-error.log
+#
+# ============================================

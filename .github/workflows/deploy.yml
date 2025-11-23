@@ -1,0 +1,170 @@
+# ============================================
+# GITHUB ACTIONS - CD (Continuous Deployment)
+# Déclenché sur : Push ou PR sur branch main uniquement
+# ============================================
+
+name: CD - Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+
+# Variables d'environnement
+env:
+  DOCKER_IMAGE_NAME: sen-logistique
+  DOCKER_IMAGE_TAG: ${{ github.sha }}
+  DEPLOY_PATH: /home/deploy/sen-logistique
+
+jobs:
+  
+  # ==========================================
+  # JOB 1 : Build & Push Docker Image
+  # ==========================================
+  build:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+    
+    steps:
+      # Étape 1 : Récupérer le code
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      # Étape 2 : Setup Docker Buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      # Étape 3 : Login à Docker Hub (optionnel - pour push sur Docker Hub)
+      # Pour l'instant on va juste build et transférer directement
+      
+      # Étape 4 : Build l'image Docker
+      - name:  Build Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: ${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }}
+          outputs: type=docker,dest=/tmp/image.tar
+      
+      # Étape 5 : Upload l'image comme artifact
+      - name: Upload Docker image
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image
+          path: /tmp/image.tar
+          retention-days: 1
+
+  # ==========================================
+  # JOB 2 : Deploy to Digital Ocean
+  # ==========================================
+  deploy:
+    name: Deploy to Digital Ocean
+    runs-on: ubuntu-latest
+    needs: build
+    
+    steps:
+      # Étape 1 : Download l'image Docker
+      - name: Download Docker image
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image
+          path: /tmp
+      
+      # Étape 2 : Checkout code (pour avoir les scripts)
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      # Étape 3 : Setup SSH
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
+      
+      # Étape 4 : Copier l'image Docker sur le serveur
+      - name: Copy Docker image to server
+        run: |
+          scp /tmp/image.tar deploy@${{ secrets.SERVER_IP }}:/tmp/sen-logistique-image.tar
+      
+      # Étape 5 : Copier les fichiers de configuration
+      - name: Copy configuration files
+        run: |
+          scp docker-compose.prod.yml deploy@${{ secrets.SERVER_IP }}:${{ env.DEPLOY_PATH }}/
+          scp -r scripts/ deploy@${{ secrets.SERVER_IP }}:${{ env.DEPLOY_PATH }}/
+      
+      # Étape 6 : Créer le fichier .env sur le serveur
+      - name: Create .env file on server
+        run: |
+          ssh deploy@${{ secrets.SERVER_IP }} << 'EOF'
+            cat > ${{ env.DEPLOY_PATH }}/.env << 'ENVEOF'
+          DB_NAME=${{ secrets.DB_NAME }}
+          DB_USER=${{ secrets.DB_USER }}
+          DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
+          JWT_EXPIRATION=86400000
+          APP_VERSION=${{ env.DOCKER_IMAGE_TAG }}
+          TWILIO_ENABLED=false
+          ENVEOF
+          EOF
+      
+      # Étape 7 : Charger l'image Docker sur le serveur
+      - name: Load Docker image on server
+        run: |
+          ssh deploy@${{ secrets.SERVER_IP }} << 'EOF'
+            docker load -i /tmp/sen-logistique-image.tar
+            docker tag ${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }} ${{ env.DOCKER_IMAGE_NAME }}:latest
+            rm /tmp/sen-logistique-image.tar
+          EOF
+      
+      # Étape 8 : Déployer avec Docker Compose
+      - name: Deploy with Docker Compose
+        run: |
+          ssh deploy@${{ secrets.SERVER_IP }} << 'EOF'
+            cd ${{ env.DEPLOY_PATH }}
+          
+            # Rendre le script de déploiement exécutable
+            chmod +x scripts/deploy.sh
+          
+            # Exécuter le déploiement
+            ./scripts/deploy.sh
+          EOF
+      
+      # Étape 9 : Vérifier que l'app est bien démarrée
+      - name: Health Check
+        run: |
+          ssh deploy@${{ secrets.SERVER_IP }} << 'EOF'
+            cd ${{ env.DEPLOY_PATH }}
+            chmod +x scripts/health-check.sh
+            ./scripts/health-check.sh
+          EOF
+      
+      # Étape 10 : Nettoyage des anciennes images
+      - name: Clean up old Docker images
+        run: |
+          ssh deploy@${{ secrets.SERVER_IP }} << 'EOF'
+            docker image prune -a -f --filter "until=72h"
+          EOF
+
+  # ==========================================
+  # JOB 3 : Notification (optionnel)
+  # ==========================================
+  notify:
+    name: Notify Deployment
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: always()
+    
+    steps:
+      - name: Deployment Success
+        if: needs.deploy.result == 'success'
+        run: |
+          echo "✅ Déploiement réussi sur http://${{ secrets.SERVER_IP }}"
+          echo "🎉 Version déployée: ${{ env.DOCKER_IMAGE_TAG }}"
+
+      - name: ❌ Deployment Failed
+        if: needs.deploy.result == 'failure'
+        run: |
+          echo "❌ Déploiement échoué!"
+          echo "Vérifiez les logs GitHub Actions"
