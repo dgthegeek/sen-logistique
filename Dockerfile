@@ -73,7 +73,8 @@ EXPOSE 8080
 # Variables d'environnement par défaut
 # Ces valeurs seront surchargées par docker-compose ou les secrets
 ENV SPRING_PROFILES_ACTIVE=prod
-ENV JAVA_OPTS="-Xms512m -Xmx1024m"
+ENV JAVA_OPTS="-Xms128m -Xmx256m"
+
 
 # Health check : Docker vérifie toutes les 30s que l'app est vivante
 # Timeout de 3s, 3 tentatives avant de considérer l'app comme "unhealthy"
