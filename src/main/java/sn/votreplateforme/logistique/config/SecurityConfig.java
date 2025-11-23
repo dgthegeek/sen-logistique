@@ -79,8 +79,10 @@ public class SecurityConfig {
                 
                 // Actuator - Accessible
                 .requestMatchers("/actuator/**").permitAll()
-                
-                // ==================== ENDPOINTS VENDEUR ====================
+                    .requestMatchers("/api/actuator/**").permitAll()
+
+
+                    // ==================== ENDPOINTS VENDEUR ====================
                 
                 // Endpoints vendeur - Nécessite rôle VENDEUR
                 .requestMatchers("/vendeur/**").hasRole("VENDEUR")

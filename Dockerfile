@@ -26,9 +26,6 @@ RUN mvn dependency:go-offline -B
 # Maintenant on copie tout le code source
 COPY src ./src
 
-# IMPORTANT : Copier aussi le fichier openapi.yaml pour la génération
-COPY src/main/resources/openapi.yaml ./src/main/resources/
-
 # Compiler l'application (génération DTOs + compilation + packaging)
 # -DskipTests : On skip les tests car ils seront exécutés par GitHub Actions
 # Le JAR sera créé dans /app/target/
