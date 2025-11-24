@@ -5,179 +5,70 @@
 
 version: '3.8'
 
-# Définition des services (containers)
 services:
-  
-  # ==========================================
-  # SERVICE 1 : PostgreSQL Database
-  # ==========================================
   postgres:
     image: postgres:15-alpine
     container_name: sen-logistique-db
-    
-    # Redémarrage automatique en cas de crash
     restart: unless-stopped
-    
-    # Variables d'environnement (credentials DB)
-    # Ces valeurs seront surchargées par un fichier .env en production
     environment:
-      POSTGRES_DB: ${DB_NAME:-logistique_dakar}
-      POSTGRES_USER: ${DB_USER:-logistique_user}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}  # OBLIGATOIRE - défini dans .env
-      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=fr_FR.UTF-8"
-    
-    # Ports (ne pas exposer publiquement en prod !)
-    # Format : HOST:CONTAINER
-    # On expose 5432 seulement en local pour debugging
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
     ports:
       - "127.0.0.1:5432:5432"
-    
-    # Volume persistant : Les données survivent au redémarrage
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      # Optionnel : scripts d'initialisation
-      # - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql
-    
-    # Réseau interne (communication app ↔ db)
-    networks:
-      - sen-logistique-network
-    
-    # Health check : Vérifier que PostgreSQL est prêt
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-logistique_user}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - sen-logistique-network
+    command: >
+      postgres
+      -c shared_buffers=64MB
+      -c effective_cache_size=128MB
+      -c max_connections=20
+      -c work_mem=2MB
 
-  # ==========================================
-  # SERVICE 2 : Spring Boot Application
-  # ==========================================
   app:
-    # Image construite depuis le Dockerfile
     image: sen-logistique:${APP_VERSION:-latest}
     container_name: sen-logistique-app
-    
-    # Construire l'image si elle n'existe pas
-    build:
-      context: .
-      dockerfile: Dockerfile
-    
-    # Redémarrage automatique
     restart: unless-stopped
-    
-    # Dépendances : Attendre que PostgreSQL soit prêt
     depends_on:
       postgres:
         condition: service_healthy
-    
-    # Ports : Exposer 8080 sur l'hôte
-    # Nginx fera le reverse proxy vers ce port
-    ports:
-      - "8080:8080"
-    
-    # Variables d'environnement de l'application
     environment:
-      # Profile Spring Boot
       SPRING_PROFILES_ACTIVE: prod
-      
-      # Configuration Base de données
-      # Le hostname est "postgres" (nom du service Docker)
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${DB_NAME:-logistique_dakar}
-      SPRING_DATASOURCE_USERNAME: ${DB_USER:-logistique_user}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${DB_NAME}
+      SPRING_DATASOURCE_USERNAME: ${DB_USER}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
-      
-      # JWT Secret (IMPORTANT : Changer en production !)
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
-      
-      # Twilio (WhatsApp) - Optionnel
       TWILIO_ENABLED: ${TWILIO_ENABLED:-false}
-      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
-      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
-      TWILIO_WHATSAPP_FROM: ${TWILIO_WHATSAPP_FROM:-}
-      
-      # Logs
-      LOGGING_LEVEL_ROOT: INFO
-      LOGGING_LEVEL_SN_VOTREPLATEFORME: DEBUG
-      
-      # JVM Options (mémoire)
-      JAVA_OPTS: "-Xms128m -Xmx256m -XX:+UseG1GC"
-    
-    # Volumes : Logs persistants
+      JAVA_OPTS: "-Xms128m -Xmx320m -XX:+UseG1GC -XX:MaxGCPauseMillis=100 -XX:+UseStringDeduplication"
+    ports:
+      - "8080:8080"
     volumes:
       - ./logs:/app/logs
-    
-    # Réseau
-    networks:
-      - sen-logistique-network
-    
-    # Health check : Vérifier que l'API répond
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/api/actuator/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/api/actuator/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 60s  # Attendre 60s au démarrage avant de vérifier
+      start_period: 60s
+    networks:
+      - sen-logistique-network
+    deploy:
+      resources:
+        limits:
+          memory: 400M
+        reservations:
+          memory: 256M
 
-# ==========================================
-# VOLUMES (Données persistantes)
-# ==========================================
-volumes:
-  # Volume pour PostgreSQL
-  # Les données survivent au redémarrage et à la suppression des containers
-  postgres_data:
-    driver: local
-
-# ==========================================
-# NETWORKS (Réseau interne)
-# ==========================================
 networks:
   sen-logistique-network:
     driver: bridge
-
-# ==========================================
-# NOTES IMPORTANTES
-# ==========================================
-#
-# 1. Fichier .env requis :
-#    Créer un fichier .env à la racine avec :
-#    DB_PASSWORD=VotreMdpSecurise123!
-#    JWT_SECRET=UnSecretTresLongEtComplexe123!
-#    APP_VERSION=1.0.0
-#
-# 2. Sécurité :
-#    - PostgreSQL non exposé publiquement
-#    - Secrets dans .env (ne JAMAIS commit)
-#    - Health checks pour redémarrage auto
-#
-# 3. Communication :
-#    app → postgres via le réseau Docker
-#    Hostname PostgreSQL = "postgres" (nom du service)
-#
-# 4. Logs :
-#    - Les logs de l'app sont dans ./logs/
-#    - docker-compose logs -f app (voir les logs en temps réel)
-#
-# ==========================================
-# COMMANDES UTILES
-# ==========================================
-#
-# Démarrer tous les services :
-# docker-compose -f docker-compose.prod.yml up -d
-#
-# Voir les logs :
-# docker-compose -f docker-compose.prod.yml logs -f
-#
-# Arrêter tous les services :
-# docker-compose -f docker-compose.prod.yml down
-#
-# Reconstruire l'image :
-# docker-compose -f docker-compose.prod.yml build --no-cache
-#
-# Redémarrer l'app seulement :
-# docker-compose -f docker-compose.prod.yml restart app
-#
-# Voir l'état des services :
-# docker-compose -f docker-compose.prod.yml ps
-#
-# ==========================================
+    name: sen-logistique-network
