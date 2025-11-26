@@ -61,20 +61,20 @@ WAIT_TIME=5
 while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
     ATTEMPT=$((ATTEMPT + 1))
     echo -e "${YELLOW}   Tentative $ATTEMPT/$MAX_ATTEMPTS...${NC}"
-
+    
     # Vérifier si l'app répond
     if docker exec sen-logistique-app wget --quiet --tries=1 --spider http://localhost:8080/api/zones 2>/dev/null; then
         echo -e "${GREEN}✅ Application répond !${NC}"
         break
     fi
-
+    
     if [ $ATTEMPT -eq $MAX_ATTEMPTS ]; then
         echo -e "${RED}❌ Timeout: L'application ne répond pas après 60 secondes${NC}"
         echo -e "${RED}📋 Logs de l'application:${NC}"
         docker logs --tail=50 sen-logistique-app
         exit 1
     fi
-
+    
     sleep $WAIT_TIME
 done
 
@@ -83,7 +83,7 @@ done
 # ==========================================
 echo -e "${YELLOW}4️⃣ Test de l'endpoint /api/zones...${NC}"
 
-HTTP_CODE=$(docker exec sen-logistique-app wget --server-response --spider --quiet http://localhost:8080/api/zones>&1 | awk '/^  HTTP/{print $2}' | tail -1)
+HTTP_CODE=$(docker exec sen-logistique-app wget --server-response --spider --quiet http://localhost:8080/api/zones 2>&1 | grep -oP 'HTTP/[0-9.]+ \K[0-9]+' | head -1 || echo "000")
 
 if [ "$HTTP_CODE" != "200" ]; then
     echo -e "${RED}❌ L'endpoint /api/zones ne répond pas correctement (HTTP $HTTP_CODE)${NC}"
