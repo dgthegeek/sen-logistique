@@ -2,50 +2,83 @@
 # DOCKER COMPOSE - Production ULTRA-LIGHT
 # Optimisé pour serveur 512 MB RAM
 # ============================================
+# 
+# RÉPARTITION MÉMOIRE :
+# - PostgreSQL : ~80 MB (limite)
+# - App Spring Boot : ~320 MB (limite)
+# - OS Ubuntu : ~112 MB (reste)
+# Total : 512 MB
+#
+# ⚠️ CRITIQUE : Ne PAS désactiver le health check PostgreSQL
+# Raison : depends_on.condition nécessite un health check actif
+# ============================================
 
 version: '3.8'
 
 services:
+  # ==========================================
+  # BASE DE DONNÉES POSTGRESQL
+  # ==========================================
   postgres:
     image: postgres:15-alpine
     container_name: sen-logistique-db
     restart: unless-stopped
+    
     environment:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
+    
     ports:
       - "127.0.0.1:5432:5432"
+    
+    # ⚠️ CRITIQUE : NE PAS DÉSACTIVER
+    # Nécessaire pour depends_on.condition de l'app
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
-      interval: 10s
+      interval: 30s       # ✅ Réduit de 10s → 30s (économie CPU)
       timeout: 5s
-      retries: 5
+      retries: 3          # ✅ Réduit de 5 → 3
+      start_period: 10s
+    
     networks:
       - sen-logistique-network
+    
     command: >
       postgres
       -c shared_buffers=16MB
       -c effective_cache_size=32MB
       -c max_connections=10
       -c work_mem=1MB
+      -c maintenance_work_mem=8MB
+      -c random_page_cost=1.1
+      -c effective_io_concurrency=200
+    
     deploy:
       resources:
         limits:
           memory: 80M
+          cpus: '0.5'
         reservations:
           memory: 50M
+          cpus: '0.25'
 
+  # ==========================================
+  # APPLICATION SPRING BOOT
+  # ==========================================
   app:
     image: sen-logistique:${APP_VERSION:-latest}
     container_name: sen-logistique-app
     restart: unless-stopped
+    
     depends_on:
       postgres:
         condition: service_healthy
+    
     environment:
       SPRING_PROFILES_ACTIVE: prod
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${DB_NAME}
@@ -54,29 +87,70 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
       TWILIO_ENABLED: ${TWILIO_ENABLED:-false}
-      # ⚡ Configuration ULTRA-LIGHT pour 512 MB RAM
-      JAVA_OPTS: "-Xms64m -Xmx180m -XX:MaxMetaspaceSize=80m -XX:+UseSerialGC -XX:MinHeapFreeRatio=20 -XX:MaxHeapFreeRatio=40 -Djava.security.egd=file:/dev/./urandom"
+      
+      # ⚡ JVM ULTRA-LIGHT pour 512 MB RAM
+      JAVA_OPTS: >-
+        -Xms80m
+        -Xmx200m
+        -XX:MaxMetaspaceSize=90m
+        -XX:MetaspaceSize=64m
+        -XX:+UseSerialGC
+        -XX:MinHeapFreeRatio=20
+        -XX:MaxHeapFreeRatio=40
+        -XX:GCTimeRatio=19
+        -XX:+TieredCompilation
+        -XX:TieredStopAtLevel=1
+        -Djava.security.egd=file:/dev/./urandom
+        -Dspring.jmx.enabled=false
+        -Dspring.backgroundpreinitializer.ignore=true
+    
     ports:
       - "8080:8080"
+    
     volumes:
       - ./logs:/app/logs
-    # ⚠️ HEALTH CHECK DÉSACTIVÉ pour économiser RAM
-    # healthcheck:
-    #   test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/api/actuator/health || exit 1"]
-    #   interval: 30s
-    #   timeout: 10s
-    #   retries: 3
-    #   start_period: 60s
+    
     networks:
       - sen-logistique-network
+    
     deploy:
       resources:
         limits:
-          memory: 250M
+          memory: 320M       # ✅ Augmenté pour stabilité
+          cpus: '0.8'
         reservations:
-          memory: 150M
+          memory: 180M
+          cpus: '0.4'
 
 networks:
   sen-logistique-network:
     driver: bridge
     name: sen-logistique-network
+
+# ==========================================
+# ✅ GESTION AUTOMATIQUE DES CONTENEURS
+# ==========================================
+# 
+# Q : Que se passe-t-il si des conteneurs tournent déjà ?
+# R : Le script deploy.sh gère TOUT automatiquement :
+#
+# 1. docker-compose down
+#    ├─> Arrête sen-logistique-app ✅
+#    ├─> Arrête sen-logistique-db ✅
+#    ├─> Libère port 8080 ✅
+#    ├─> Libère port 5432 ✅
+#    ├─> Supprime les conteneurs ✅
+#    ├─> Nettoie le réseau ✅
+#    └─> GARDE ./data/postgres (données) ✅
+#
+# 2. docker-compose up -d
+#    ├─> Crée nouveaux conteneurs ✅
+#    ├─> Utilise la nouvelle image ✅
+#    └─> Ports maintenant disponibles ✅
+#
+# RÉSULTAT : Aucun conflit possible ! ✅
+# - Pas de "Container already running"
+# - Pas de "Port already in use"
+# - Pas de conteneurs zombies
+#
+# ==========================================
