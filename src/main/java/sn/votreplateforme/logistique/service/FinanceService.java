@@ -9,147 +9,136 @@ import sn.votreplateforme.logistique.entity.Livraison;
 import sn.votreplateforme.logistique.entity.StatutLivraison;
 import sn.votreplateforme.logistique.entity.Vendeur;
 import sn.votreplateforme.logistique.repository.LivraisonRepository;
-import sn.votreplateforme.logistique.repository.TransactionRepository;
 import sn.votreplateforme.logistique.repository.VendeurRepository;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Service Finance - Gestion financière de la plateforme
- * 
- * Responsabilités :
- * - Calcul des statistiques financières (dashboard)
- * - Gestion des demandes de paiement vendeurs
- * - Calcul des commissions
  */
 @Service
 @Slf4j
 @RequiredArgsConstructor
 public class FinanceService {
-    
+
     private final LivraisonRepository livraisonRepository;
     private final VendeurRepository vendeurRepository;
-    private final TransactionRepository transactionRepository;
-    
+
     /**
      * Récupère le dashboard financier avec statistiques
-     * 
-     * @param periode Période : jour, semaine, mois
-     * @return AdminFinancesDashboard avec toutes les stats
      */
     @Transactional(readOnly = true)
     public AdminFinancesDashboard getDashboardFinancier(String periode) {
         log.info("Récupération dashboard financier - Période: {}", periode);
-        
+
         // 1. Calculer les dates de début et fin selon la période
         LocalDateTime dateDebut = calculerDateDebut(periode);
         LocalDateTime dateFin = LocalDateTime.now();
-        
+
         // 2. Récupérer toutes les livraisons livrées dans la période
         List<Livraison> livraisonsLivrees = livraisonRepository
-            .findByStatutAndDateLivraisonBetween(
-                StatutLivraison.LIVREE, 
-                dateDebut, 
-                dateFin
-            );
-        
+                .findByStatutAndDateLivraisonBetween(
+                        StatutLivraison.LIVREE,
+                        dateDebut,
+                        dateFin
+                );
+
         // 3. Calculer le cash collecté total
         BigDecimal cashCollecte = livraisonsLivrees.stream()
-            .map(Livraison::getCashCollecte)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
-        
+                .map(l -> l.getCashCollecte() != null ? l.getCashCollecte() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
         // 4. Calculer le montant à payer aux vendeurs (soldes en attente)
         BigDecimal aPayerVendeurs = vendeurRepository.findAll().stream()
-            .map(Vendeur::getSoldeEnAttente)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
-        
+                .map(v -> v.getSoldeEnAttente() != null ? v.getSoldeEnAttente() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
         // 5. Calculer les commissions (40% des frais de livraison)
         BigDecimal commissions = livraisonsLivrees.stream()
-            .map(l -> l.getFraisLivraison().multiply(new BigDecimal("0.40")))
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
-        
+                .map(l -> l.getFraisLivraison().multiply(new BigDecimal("0.40")))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
         // 6. Calculer les statistiques
         AdminFinancesDashboardStatistiques stats = new AdminFinancesDashboardStatistiques();
         stats.setNombreLivraisons(livraisonsLivrees.size());
-        
+
         // Nombre de vendeurs distincts ayant eu des livraisons
         long nombreVendeurs = livraisonsLivrees.stream()
-            .map(l -> l.getVendeur().getId())
-            .distinct()
-            .count();
+                .map(l -> l.getVendeur().getId())
+                .distinct()
+                .count();
         stats.setNombreVendeurs((int) nombreVendeurs);
-        
-        // Taux de réussite (livraisons livrées / total livraisons non annulées)
+
+        // Taux de réussite
         List<Livraison> toutesLivraisons = livraisonRepository
-            .findByDateCreationBetween(dateDebut, dateFin);
+                .findByDateCreationBetween(dateDebut, dateFin);
         long livraisonsNonAnnulees = toutesLivraisons.stream()
-            .filter(l -> l.getStatut() != StatutLivraison.ANNULEE)
-            .count();
-        
-        double tauxReussite = livraisonsNonAnnulees > 0 
-            ? (livraisonsLivrees.size() * 100.0) / livraisonsNonAnnulees 
-            : 0.0;
+                .filter(l -> l.getStatut() != StatutLivraison.ANNULEE)
+                .count();
+
+        double tauxReussite = livraisonsNonAnnulees > 0
+                ? (livraisonsLivrees.size() * 100.0) / livraisonsNonAnnulees
+                : 0.0;
         stats.setTauxReussite(tauxReussite);
-        
+
         // 7. Construire la réponse
         AdminFinancesDashboard dashboard = new AdminFinancesDashboard();
         dashboard.setCashCollecte(cashCollecte);
         dashboard.setaPayerVendeurs(aPayerVendeurs);
         dashboard.setCommissions(commissions);
         dashboard.setStatistiques(stats);
-        
-        log.info("Dashboard financier généré - Cash: {} FCFA, À payer: {} FCFA, Commissions: {} FCFA",
-            cashCollecte, aPayerVendeurs, commissions);
-        
+
+        log.info("Dashboard financier généré - Cash: {} FCFA, À payer: {} FCFA",
+                cashCollecte, aPayerVendeurs);
+
         return dashboard;
     }
-    
+
     /**
      * Récupère les demandes de paiement en attente
-     * (Tous les vendeurs ayant un solde > 0)
-     * 
-     * @return AdminFinancesPaiementsPendingGet200Response avec liste des demandes
      */
     @Transactional(readOnly = true)
     public AdminFinancesPaiementsPendingGet200Response getDemandesPaiementEnAttente() {
         log.info("Récupération des demandes de paiement en attente");
-        
+
         // 1. Récupérer tous les vendeurs avec solde > 0
-        List<Vendeur> vendeursAvecSolde = vendeurRepository.findBySoldeEnAttenteGreaterThan(BigDecimal.ZERO);
-        
+        List<Vendeur> vendeursAvecSolde = vendeurRepository
+                .findBySoldeEnAttenteGreaterThan(BigDecimal.ZERO);
+
         // 2. Construire les demandes de paiement
         List<DemandePaiement> demandes = new ArrayList<>();
         BigDecimal totalAPayer = BigDecimal.ZERO;
-        
+
         for (Vendeur vendeur : vendeursAvecSolde) {
-            // Compter le nombre de livraisons livrées non encore payées
+            // Compter le nombre de livraisons livrées
             long nombreLivraisons = livraisonRepository.countByVendeurAndStatut(
-                vendeur, 
-                StatutLivraison.LIVREE
+                    vendeur,
+                    StatutLivraison.LIVREE
             );
-            
+
             // Créer l'objet DemandePaiement
             DemandePaiement demande = new DemandePaiement();
             demande.setId(vendeur.getId());
             demande.setMontant(vendeur.getSoldeEnAttente());
             demande.setNombreLivraisons((int) nombreLivraisons);
-            
+
             // Date de la plus ancienne livraison non payée
             livraisonRepository.findFirstByVendeurAndStatutOrderByDateLivraisonAsc(
-                vendeur, 
-                StatutLivraison.LIVREE
-            ).ifPresent(livraison -> 
-                demande.setDateDemande(
-                    livraison.getDateLivraison()
-                        .atZone(java.time.ZoneId.systemDefault())
-                        .toOffsetDateTime()
-                )
-            );
-            
+                    vendeur,
+                    StatutLivraison.LIVREE
+            ).ifPresent(livraison -> {
+                if (livraison.getDateLivraison() != null) {
+                    demande.setDateDemande(
+                            livraison.getDateLivraison().atOffset(ZoneOffset.UTC)
+                    );
+                }
+            });
+
             // Vendeur (objet imbriqué)
             LivraisonDetailResponseVendeur vendeurInfo = new LivraisonDetailResponseVendeur();
             vendeurInfo.setId(vendeur.getId());
@@ -158,31 +147,28 @@ public class FinanceService {
             vendeurInfo.setTelephone(vendeur.getTelephone());
             vendeurInfo.setNomBoutique(vendeur.getNomBoutique());
             demande.setVendeur(vendeurInfo);
-            
+
             demandes.add(demande);
             totalAPayer = totalAPayer.add(vendeur.getSoldeEnAttente());
         }
-        
+
         // 3. Construire la réponse
-        AdminFinancesPaiementsPendingGet200Response response = 
-            new AdminFinancesPaiementsPendingGet200Response();
+        AdminFinancesPaiementsPendingGet200Response response =
+                new AdminFinancesPaiementsPendingGet200Response();
         response.setDemandes(demandes);
         response.setTotalAPayer(totalAPayer);
-        
+
         log.info("{} demandes de paiement - Total: {} FCFA", demandes.size(), totalAPayer);
-        
+
         return response;
     }
-    
+
     /**
      * Calcule la date de début selon la période
-     * 
-     * @param periode jour, semaine, mois
-     * @return LocalDateTime de début
      */
     private LocalDateTime calculerDateDebut(String periode) {
         LocalDate today = LocalDate.now();
-        
+
         return switch (periode) {
             case "jour" -> today.atStartOfDay();
             case "semaine" -> today.minusDays(7).atStartOfDay();
