@@ -108,11 +108,15 @@ public interface LivraisonRepository extends JpaRepository<Livraison, Long> {
 
     // ==================== RECHERCHES AVANCÉES ====================
 
+    /**
+     * Recherche avancée avec filtres optionnels
+     * CORRECTION: Utilisation de COALESCE pour gérer les paramètres NULL
+     */
     @Query("SELECT l FROM Livraison l WHERE " +
             "(:vendeur IS NULL OR l.vendeur = :vendeur) AND " +
             "(:statut IS NULL OR l.statut = :statut) AND " +
-            "(:debut IS NULL OR l.dateCreation >= :debut) AND " +
-            "(:fin IS NULL OR l.dateCreation <= :fin) " +
+            "(CAST(:debut AS timestamp) IS NULL OR l.dateCreation >= :debut) AND " +
+            "(CAST(:fin AS timestamp) IS NULL OR l.dateCreation <= :fin) " +
             "ORDER BY l.dateCreation DESC")
     Page<Livraison> rechercherLivraisons(
             @Param("vendeur") Vendeur vendeur,

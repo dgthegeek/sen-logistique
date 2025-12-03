@@ -36,17 +36,23 @@ public class FinanceService {
     public AdminFinancesDashboard getDashboardFinancier(String periode) {
         log.info("Récupération dashboard financier - Période: {}", periode);
 
-        // 1. Calculer les dates de début et fin selon la période
-        LocalDateTime dateDebut = calculerDateDebut(periode);
+        // 1. Calculer les dates ou null si "tout"
+        LocalDateTime dateDebut = "tout".equalsIgnoreCase(periode) ? null : calculerDateDebut(periode);
         LocalDateTime dateFin = LocalDateTime.now();
 
-        // 2. Récupérer toutes les livraisons livrées dans la période
-        List<Livraison> livraisonsLivrees = livraisonRepository
-                .findByStatutAndDateLivraisonBetween(
-                        StatutLivraison.LIVREE,
-                        dateDebut,
-                        dateFin
-                );
+        // 2. Récupérer toutes les livraisons livrées selon la période
+        List<Livraison> livraisonsLivrees;
+        if ("tout".equalsIgnoreCase(periode)) {
+            // Si période = "tout", récupérer TOUTES les livraisons livrées
+            livraisonsLivrees = livraisonRepository.findByStatut(StatutLivraison.LIVREE);
+        } else {
+            // Sinon, filtrer par date
+            livraisonsLivrees = livraisonRepository.findByStatutAndDateLivraisonBetween(
+                    StatutLivraison.LIVREE,
+                    dateDebut,
+                    dateFin
+            );
+        }
 
         // 3. Calculer le cash collecté total
         BigDecimal cashCollecte = livraisonsLivrees.stream()
@@ -75,8 +81,13 @@ public class FinanceService {
         stats.setNombreVendeurs((int) nombreVendeurs);
 
         // Taux de réussite
-        List<Livraison> toutesLivraisons = livraisonRepository
-                .findByDateCreationBetween(dateDebut, dateFin);
+        List<Livraison> toutesLivraisons;
+        if ("tout".equalsIgnoreCase(periode)) {
+            toutesLivraisons = livraisonRepository.findAll();
+        } else {
+            toutesLivraisons = livraisonRepository.findByDateCreationBetween(dateDebut, dateFin);
+        }
+
         long livraisonsNonAnnulees = toutesLivraisons.stream()
                 .filter(l -> l.getStatut() != StatutLivraison.ANNULEE)
                 .count();
@@ -93,12 +104,11 @@ public class FinanceService {
         dashboard.setCommissions(commissions);
         dashboard.setStatistiques(stats);
 
-        log.info("Dashboard financier généré - Cash: {} FCFA, À payer: {} FCFA",
-                cashCollecte, aPayerVendeurs);
+        log.info("Dashboard financier généré - Période: {} - Cash: {} FCFA, À payer: {} FCFA",
+                periode, cashCollecte, aPayerVendeurs);
 
         return dashboard;
     }
-
     /**
      * Récupère les demandes de paiement en attente
      */
