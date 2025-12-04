@@ -1,10 +1,8 @@
 #!/bin/bash
-
 # ============================================
 # SCRIPT HEALTH CHECK
 # Vérifie que l'application fonctionne
 # ============================================
-
 set -e
 
 # Couleurs
