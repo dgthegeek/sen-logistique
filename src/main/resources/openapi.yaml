@@ -1618,6 +1618,11 @@ components:
           example: "Zone 2 - Sacré-Coeur, Mermoz"
         description:
           type: string
+        communes: # ✅ AJOUTER CE CHAMP
+          type: array
+          items:
+            type: string
+          example: [ "Dakar", "Plateau", "Médina" ]
         tarifStandard:
           type: number
           format: decimal

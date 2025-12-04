@@ -7,8 +7,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 import sn.votreplateforme.logistique.api.VendeurApi;
 import sn.votreplateforme.logistique.dto.*;
-import sn.votreplateforme.logistique.entity.StatutLivraison;
 import sn.votreplateforme.logistique.service.LivraisonService;
+import sn.votreplateforme.logistique.service.VendeurService;
 
 /**
  * Controller Vendeur
@@ -28,6 +28,7 @@ import sn.votreplateforme.logistique.service.LivraisonService;
 public class VendeurController implements VendeurApi {
 
     private final LivraisonService livraisonService;
+    private final VendeurService vendeurService;
 
     /**
      * GET /vendeur/dashboard
@@ -37,13 +38,41 @@ public class VendeurController implements VendeurApi {
     public ResponseEntity<VendeurDashboard> vendeurDashboardGet() {
         log.info("=== Requête dashboard vendeur ===");
 
-        // TODO: Implémenter le service de dashboard
-        throw new UnsupportedOperationException("Dashboard vendeur pas encore implémenté");
+        try {
+            VendeurDashboard dashboard = vendeurService.getDashboard();
+
+            log.info("✅ Dashboard généré avec succès");
+
+            return ResponseEntity.ok(dashboard);
+
+        } catch (Exception e) {
+            log.error("❌ Erreur lors de la génération du dashboard", e);
+            throw new RuntimeException("Erreur lors de la génération du dashboard: " + e.getMessage());
+        }
     }
 
+    /**
+     * POST /vendeur/demande-paiement
+     * Demander un paiement pour récupérer le solde
+     */
     @Override
     public ResponseEntity<VendeurDemandePaiementPost200Response> vendeurDemandePaiementPost() {
-        return null;
+        log.info("=== Requête demande de paiement ===");
+
+        try {
+            VendeurDemandePaiementPost200Response response = vendeurService.demanderPaiement();
+
+            log.info("✅ Demande de paiement créée - Montant: {} FCFA", response.getMontant());
+
+            return ResponseEntity.ok(response);
+
+        } catch (IllegalStateException e) {
+            log.warn("❌ Demande de paiement refusée: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("❌ Erreur lors de la demande de paiement", e);
+            throw new RuntimeException("Erreur lors de la demande de paiement: " + e.getMessage());
+        }
     }
 
     /**
@@ -116,8 +145,20 @@ public class VendeurController implements VendeurApi {
     public ResponseEntity<LivraisonDetailResponse> vendeurLivraisonsIdGet(Long id) {
         log.info("=== Requête détails livraison {} ===", id);
 
-        // TODO: Implémenter la récupération des détails
-        throw new UnsupportedOperationException("Détails livraison pas encore implémenté");
+        try {
+            LivraisonDetailResponse detail = vendeurService.getDetailLivraison(id);
+
+            log.info("✅ Détails récupérés pour livraison {}", id);
+
+            return ResponseEntity.ok(detail);
+
+        } catch (IllegalArgumentException e) {
+            log.warn("❌ Livraison {} non trouvée ou accès refusé: {}", id, e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("❌ Erreur lors de la récupération des détails", e);
+            throw new RuntimeException("Erreur lors de la récupération des détails: " + e.getMessage());
+        }
     }
 
     /**
@@ -128,9 +169,16 @@ public class VendeurController implements VendeurApi {
     public ResponseEntity<VendeurFinances> vendeurFinancesGet() {
         log.info("=== Requête finances vendeur ===");
 
-        // TODO: Implémenter le service de finances
-        throw new UnsupportedOperationException("Finances vendeur pas encore implémenté");
+        try {
+            VendeurFinances finances = vendeurService.getFinances();
+
+            log.info("✅ Finances récupérées - Solde: {} FCFA", finances.getSoldeEnAttente());
+
+            return ResponseEntity.ok(finances);
+
+        } catch (Exception e) {
+            log.error("❌ Erreur lors de la récupération des finances", e);
+            throw new RuntimeException("Erreur lors de la récupération des finances: " + e.getMessage());
+        }
     }
-
-
 }

@@ -3,6 +3,7 @@ package sn.votreplateforme.logistique.service;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import sn.votreplateforme.logistique.entity.Livraison;
 
 import java.math.BigDecimal;
 
@@ -235,5 +236,103 @@ public class NotificationService {
      */
     private String formatMontant(BigDecimal montant) {
         return String.format("%,d", montant.longValue()).replace(',', ' ');
+
+
+    }
+
+    /**
+     * Envoie une notification au vendeur
+     */
+    public void envoyerNotificationVendeur(String telephone, String titre, String message) {
+        log.info("📱 [SIMULATION] Notification WhatsApp au vendeur: {}", telephone);
+        log.info("   Titre: {}", titre);
+        log.info("   Message: {}", message);
+
+        // TODO: Implémenter avec Twilio WhatsApp API en production
+        // Example:
+        // twilioClient.messages.create(
+        //     to: "whatsapp:" + telephone,
+        //     from: "whatsapp:+221XXXXXXXXX",
+        //     body: titre + "\n\n" + message
+        // )
+    }
+
+    /**
+     * Envoie une notification à l'admin
+     */
+    public void envoyerNotificationAdmin(String titre, String message) {
+        log.info("📱 [SIMULATION] Notification WhatsApp à l'admin");
+        log.info("   Titre: {}", titre);
+        log.info("   Message: {}", message);
+
+        // TODO: Implémenter avec Twilio WhatsApp API en production
+        // Envoyer au numéro de l'admin configuré dans application.yml
+    }
+
+    /**
+     * Notifie le vendeur que son colis a été ramassé
+     */
+    public void notifierRamassage(Livraison livraison) {
+        String titre = "✅ Colis ramassé !";
+        String message = String.format(
+                "Bonjour %s,\n\n" +
+                        "Votre colis #%s a été ramassé avec succès.\n" +
+                        "Il est maintenant en traitement pour livraison.\n\n" +
+                        "Destination: %s, %s\n" +
+                        "Client: %s",
+                livraison.getVendeur().getPrenom(),
+                livraison.getNumeroTracking(),
+                livraison.getAdresseDestination().getQuartier(),
+                livraison.getAdresseDestination().getCommune(),
+                livraison.getNomClient()
+        );
+
+        envoyerNotificationVendeur(livraison.getVendeur().getTelephone(), titre, message);
+    }
+
+    /**
+     * Notifie le vendeur que son colis a été livré
+     */
+    public void notifierLivraison(Livraison livraison) {
+        String titre = "🎉 Colis livré !";
+        String montantARecevoir = livraison.getMontantCOD()
+                .subtract(livraison.getFraisLivraison())
+                .toString();
+
+        String message = String.format(
+                "Bonjour %s,\n\n" +
+                        "Votre colis #%s a été livré avec succès !\n\n" +
+                        "Montant COD collecté: %s FCFA\n" +
+                        "Frais de livraison: %s FCFA\n" +
+                        "Montant à recevoir: %s FCFA\n\n" +
+                        "Le montant sera disponible dans votre solde.",
+                livraison.getVendeur().getPrenom(),
+                livraison.getNumeroTracking(),
+                livraison.getCashCollecte().toString(),
+                livraison.getFraisLivraison().toString(),
+                montantARecevoir
+        );
+
+        envoyerNotificationVendeur(livraison.getVendeur().getTelephone(), titre, message);
+    }
+
+    /**
+     * Notifie le client qu'un livreur est en route
+     */
+    public void notifierClientEnRoute(Livraison livraison) {
+        String titre = "🚚 Livraison en route";
+        String message = String.format(
+                "Bonjour %s,\n\n" +
+                        "Votre colis #%s est en route !\n" +
+                        "Le livreur arrivera bientôt.\n\n" +
+                        "Montant à payer: %s FCFA\n" +
+                        "Adresse: %s",
+                livraison.getNomClient(),
+                livraison.getNumeroTracking(),
+                livraison.getMontantCOD().toString(),
+                livraison.getAdresseDestination().getAdresseComplete()
+        );
+
+        envoyerNotificationVendeur(livraison.getTelephoneClient(), titre, message);
     }
 }

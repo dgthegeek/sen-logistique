@@ -35,7 +35,7 @@ public class AdminFinanceController implements AdminFinancesApi {
      * 
      * Dashboard financier avec statistiques globales.
      * 
-     * @param periode Période : jour, semaine, mois (défaut: jour)
+     * @param periode Période : jour, semaine, mois, tout (défaut: jour)
      * @return AdminFinancesDashboard avec stats
      */
     @Override

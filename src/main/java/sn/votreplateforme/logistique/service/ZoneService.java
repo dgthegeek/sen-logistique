@@ -28,7 +28,7 @@ public class ZoneService {
     private final TarifCalculator tarifCalculator;
 
     /**
-     * Récupère toutes les zones actives
+     * Récupère toutes les zones actives avec leurs communes
      */
     public List<Zone> getAllZones() {
         log.info("Récupération de toutes les zones actives");
@@ -158,7 +158,7 @@ public class ZoneService {
     // ============================================
 
     /**
-     * Mapper Entity Zone → DTO Zone
+     * Mapper Entity Zone → DTO Zone (AVEC LES COMMUNES)
      */
     private Zone mapToDto(sn.votreplateforme.logistique.entity.Zone entity) {
         Zone dto = new Zone();
@@ -167,6 +167,14 @@ public class ZoneService {
         dto.setDescription(entity.getDescription());
         dto.setTarifStandard(entity.getTarifStandard());
         dto.setTarifExpress(entity.getTarifExpress());
+
+        List<String> communes = entity.getQuartiers().stream()
+                .map(sn.votreplateforme.logistique.entity.Quartier::getCommune)
+                .distinct()
+                .sorted()
+                .collect(Collectors.toList());
+        dto.setCommunes(communes);
+
         return dto;
     }
 

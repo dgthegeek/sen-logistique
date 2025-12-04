@@ -15,8 +15,6 @@ import java.util.Map;
 /**
  * Controller Delivery - Gestion de la confirmation de livraison via scan QR
  *
- * ImplÃ©mente l'interface DeliveryApi gÃ©nÃ©rÃ©e par OpenAPI
- *
  * Endpoints PUBLICS (pas d'authentification requise) :
  * - GET  /delivery/{numeroTracking}         - RÃ©cupÃ¨re les infos pour le formulaire
  * - POST /delivery/{numeroTracking}/livrer  - Confirme la livraison
