@@ -1,10 +1,8 @@
 #!/bin/bash
-
 # ============================================
 # SCRIPT DE DÉPLOIEMENT
 # Déploie l'application avec zero-downtime
 # ============================================
-
 set -e  # Arrêter en cas d'erreur
 
 # Couleurs pour les logs
@@ -25,7 +23,6 @@ if [ ! -f "docker-compose.prod.yml" ]; then
     echo -e "${RED}❌ Erreur: docker-compose.prod.yml introuvable${NC}"
     exit 1
 fi
-
 echo -e "${GREEN}✅ Fichier docker-compose.prod.yml trouvé${NC}"
 
 # ==========================================
@@ -35,20 +32,19 @@ if [ ! -f ".env" ]; then
     echo -e "${RED}❌ Erreur: Fichier .env introuvable${NC}"
     exit 1
 fi
-
 echo -e "${GREEN}✅ Fichier .env trouvé${NC}"
 
 # ==========================================
 # 3. Arrêter l'ancienne version (si elle existe)
 # ==========================================
 echo -e "${YELLOW}📦 Arrêt de l'ancienne version...${NC}"
-docker-compose -f docker-compose.prod.yml down || true
+docker compose -f docker-compose.prod.yml down || true
 
 # ==========================================
 # 4. Démarrer la nouvelle version
 # ==========================================
 echo -e "${BLUE}🚀 Démarrage de la nouvelle version...${NC}"
-docker-compose -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.prod.yml up -d
 
 # ==========================================
 # 5. Attendre que les services soient prêts
@@ -60,13 +56,13 @@ sleep 10
 # 6. Vérifier l'état des services
 # ==========================================
 echo -e "${BLUE}📊 État des services:${NC}"
-docker-compose -f docker-compose.prod.yml ps
+docker compose -f docker-compose.prod.yml ps
 
 # ==========================================
 # 7. Afficher les logs (dernières 20 lignes)
 # ==========================================
 echo -e "${BLUE}📋 Derniers logs:${NC}"
-docker-compose -f docker-compose.prod.yml logs --tail=20 app
+docker compose -f docker-compose.prod.yml logs --tail=20 app
 
 # ==========================================
 # 8. Succès !
