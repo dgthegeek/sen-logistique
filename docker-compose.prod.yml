@@ -1,18 +1,3 @@
-# ============================================
-# DOCKER COMPOSE - Production ULTRA-LIGHT
-# Optimisé pour serveur 512 MB RAM
-# ============================================
-# 
-# RÉPARTITION MÉMOIRE :
-# - PostgreSQL : ~80 MB (limite)
-# - App Spring Boot : ~320 MB (limite)
-# - OS Ubuntu : ~112 MB (reste)
-# Total : 512 MB
-#
-# ⚠️ CRITIQUE : Ne PAS désactiver le health check PostgreSQL
-# Raison : depends_on.condition nécessite un health check actif
-# ============================================
-
 version: '3.8'
 
 services:
@@ -36,36 +21,37 @@ services:
     ports:
       - "127.0.0.1:5432:5432"
     
-    # ⚠️ CRITIQUE : NE PAS DÉSACTIVER
-    # Nécessaire pour depends_on.condition de l'app
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
-      interval: 30s       # ✅ Réduit de 10s → 30s (économie CPU)
+      interval: 10s
       timeout: 5s
-      retries: 3          # ✅ Réduit de 5 → 3
+      retries: 5
       start_period: 10s
     
     networks:
       - sen-logistique-network
     
+    # Configuration PostgreSQL normale pour 8GB RAM
     command: >
       postgres
-      -c shared_buffers=16MB
-      -c effective_cache_size=32MB
-      -c max_connections=10
-      -c work_mem=1MB
-      -c maintenance_work_mem=8MB
+      -c shared_buffers=256MB
+      -c effective_cache_size=1GB
+      -c max_connections=100
+      -c work_mem=4MB
+      -c maintenance_work_mem=64MB
       -c random_page_cost=1.1
       -c effective_io_concurrency=200
+      -c max_wal_size=1GB
+      -c min_wal_size=80MB
     
     deploy:
       resources:
         limits:
-          memory: 80M
-          cpus: '0.5'
+          memory: 512M
+          cpus: '1.0'
         reservations:
-          memory: 50M
-          cpus: '0.25'
+          memory: 256M
+          cpus: '0.5'
 
   # ==========================================
   # APPLICATION SPRING BOOT
@@ -88,21 +74,19 @@ services:
       JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
       TWILIO_ENABLED: ${TWILIO_ENABLED:-false}
       
-      # ⚡ JVM ULTRA-LIGHT pour 512 MB RAM
+      # ⚡ JVM NORMAL pour 8 GB RAM - Fini les OutOfMemoryError!
       JAVA_OPTS: >-
-        -Xms80m
-        -Xmx200m
-        -XX:MaxMetaspaceSize=90m
-        -XX:MetaspaceSize=64m
-        -XX:+UseSerialGC
-        -XX:MinHeapFreeRatio=20
-        -XX:MaxHeapFreeRatio=40
-        -XX:GCTimeRatio=19
-        -XX:+TieredCompilation
-        -XX:TieredStopAtLevel=1
+        -Xms512m
+        -Xmx1536m
+        -XX:MaxMetaspaceSize=512m
+        -XX:MetaspaceSize=256m
+        -XX:+UseG1GC
+        -XX:MaxGCPauseMillis=200
+        -XX:ParallelGCThreads=2
+        -XX:ConcGCThreads=1
+        -XX:InitiatingHeapOccupancyPercent=70
         -Djava.security.egd=file:/dev/./urandom
-        -Dspring.jmx.enabled=false
-        -Dspring.backgroundpreinitializer.ignore=true
+        -Dspring.jmx.enabled=true
     
     ports:
       - "8080:8080"
@@ -113,44 +97,23 @@ services:
     networks:
       - sen-logistique-network
     
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    
     deploy:
       resources:
         limits:
-          memory: 320M       # ✅ Augmenté pour stabilité
-          cpus: '0.8'
+          memory: 2G
+          cpus: '2.0'
         reservations:
-          memory: 180M
-          cpus: '0.4'
+          memory: 1G
+          cpus: '1.0'
 
 networks:
   sen-logistique-network:
     driver: bridge
     name: sen-logistique-network
-
-# ==========================================
-# ✅ GESTION AUTOMATIQUE DES CONTENEURS
-# ==========================================
-# 
-# Q : Que se passe-t-il si des conteneurs tournent déjà ?
-# R : Le script deploy.sh gère TOUT automatiquement :
-#
-# 1. docker-compose down
-#    ├─> Arrête sen-logistique-app ✅
-#    ├─> Arrête sen-logistique-db ✅
-#    ├─> Libère port 8080 ✅
-#    ├─> Libère port 5432 ✅
-#    ├─> Supprime les conteneurs ✅
-#    ├─> Nettoie le réseau ✅
-#    └─> GARDE ./data/postgres (données) ✅
-#
-# 2. docker-compose up -d
-#    ├─> Crée nouveaux conteneurs ✅
-#    ├─> Utilise la nouvelle image ✅
-#    └─> Ports maintenant disponibles ✅
-#
-# RÉSULTAT : Aucun conflit possible ! ✅
-# - Pas de "Container already running"
-# - Pas de "Port already in use"
-# - Pas de conteneurs zombies
-#
-# ==========================================
