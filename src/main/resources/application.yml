@@ -98,7 +98,7 @@ app:
   
   # CORS
   cors:
-    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200,https://app.senlogistique.sn,http://104.248.250.94:4200}
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200,https://app.votreplateforme.sn,http://104.248.250.94:4200}
     allowed-methods: GET,POST,PUT,DELETE,OPTIONS,PATCH
     allowed-headers: "*"
     allow-credentials: true
