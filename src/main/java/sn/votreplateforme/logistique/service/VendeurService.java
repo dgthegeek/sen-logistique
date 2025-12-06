@@ -42,11 +42,16 @@ public class VendeurService {
         Vendeur vendeur = getCurrentVendeur();
 
         // Statistiques du jour (aujourd'hui)
-        LocalDateTime debutJour = LocalDate.now().atStartOfDay();
-        LocalDateTime finJour = debutJour.plusDays(1);
+//        LocalDateTime debutJour = LocalDate.now().atStartOfDay();
+//        LocalDateTime finJour = debutJour.plusDays(1);
+
+        //Note on va changer et utiliser les statistique des 30 derniers jours
+        LocalDateTime fin = LocalDateTime.now();
+        LocalDateTime debut = fin.minusDays(30);
+
 
         List<Livraison> livraisonsJour = livraisonRepository
-                .findByVendeurAndDateCreationBetween(vendeur, debutJour, finJour);
+                .findByVendeurAndDateCreationBetween(vendeur, debut, fin);
 
         int totalColis = livraisonsJour.size();
         int colisLivres = (int) livraisonsJour.stream()
@@ -233,7 +238,7 @@ public class VendeurService {
             throw new IllegalStateException("Aucun solde à récupérer");
         }
 
-        // Vérifier qu'il n'y a pas déjà une demande en attente - CORRECTION ICI
+        // Vérifier qu'il n'y a pas déjà une demande en attente
         boolean demandeEnCours = transactionRepository
                 .existsByVendeurAndTypeAndStatut(
                         vendeur,
@@ -245,25 +250,31 @@ public class VendeurService {
             throw new IllegalStateException("Vous avez déjà une demande de paiement en cours");
         }
 
+        // Générer la référence de transaction
+        String reference = genererReferenceTransaction();
+
         // Créer la transaction de demande de paiement
         Transaction transaction = new Transaction();
         transaction.setVendeur(vendeur);
         transaction.setType(Transaction.TypeTransaction.PAIEMENT_VENDEUR);
         transaction.setMontant(soldeEnAttente);
+        transaction.setReference(reference);  // ← AJOUT ICI
         transaction.setStatut(Transaction.StatutPaiement.EN_ATTENTE);
         transaction.setCommentaire("Demande de paiement - Solde en attente");
 
         transaction = transactionRepository.save(transaction);
 
-        log.info("✅ Demande de paiement créée - Montant: {} FCFA", soldeEnAttente);
+        log.info("✅ Demande de paiement créée - Ref: {} - Montant: {} FCFA",
+                reference, soldeEnAttente);
 
         // Notifier l'admin (simulation)
         notificationService.envoyerNotificationAdmin(
                 "💰 Nouvelle demande de paiement",
-                String.format("Vendeur: %s %s\nMontant: %s FCFA\nBoutique: %s",
+                String.format("Vendeur: %s %s\nMontant: %s FCFA\nBoutique: %s\nRéférence: %s",
                         vendeur.getPrenom(), vendeur.getNom(),
                         soldeEnAttente.toString(),
-                        vendeur.getNomBoutique())
+                        vendeur.getNomBoutique(),
+                        reference)
         );
 
         // Construire la réponse
@@ -273,7 +284,6 @@ public class VendeurService {
 
         return response;
     }
-
     // ==================== MÉTHODES PRIVÉES ====================
 
     /**
@@ -335,5 +345,25 @@ public class VendeurService {
         historique.setStatut(VendeurFinancesHistoriquePaiementsInner.StatutEnum.fromValue(statutStr));
 
         return historique;
+    }
+
+    /**
+     * Génère une référence unique de transaction
+     * Format: DEM-YYYYMMDD-XXX
+     */
+    private String genererReferenceTransaction() {
+        String dateStr = LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd"));
+
+        // Compter les transactions du jour
+        LocalDateTime debutJour = LocalDate.now().atStartOfDay();
+        LocalDateTime finJour = LocalDate.now().atTime(23, 59, 59);
+
+        long nombreTransactionsJour = transactionRepository
+                .countByDateTransactionBetween(debutJour, finJour);
+
+        // Incrémenter et formater sur 3 chiffres
+        String numero = String.format("%03d", nombreTransactionsJour + 1);
+
+        return "DEM-" + dateStr + "-" + numero;
     }
 }
