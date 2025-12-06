@@ -19,67 +19,67 @@ import java.util.List;
 @Configuration
 public class CorsConfig {
     
-    @Value("${app.cors.allowed-origins}")
-    private String allowedOrigins;
+    // @Value("${app.cors.allowed-origins}")
+    // private String allowedOrigins;
     
-    @Value("${app.cors.allowed-methods}")
-    private String allowedMethods;
+    // @Value("${app.cors.allowed-methods}")
+    // private String allowedMethods;
     
-    @Value("${app.cors.allowed-headers}")
-    private String allowedHeaders;
+    // @Value("${app.cors.allowed-headers}")
+    // private String allowedHeaders;
     
-    @Value("${app.cors.allow-credentials}")
-    private boolean allowCredentials;
+    // @Value("${app.cors.allow-credentials}")
+    // private boolean allowCredentials;
     
-    @Value("${app.cors.max-age}")
-    private long maxAge;
+    // @Value("${app.cors.max-age}")
+    // private long maxAge;
     
-    /**
-     * Configuration CORS globale
-     */
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
+    // /**
+    //  * Configuration CORS globale
+    //  */
+    // @Bean
+    // public CorsConfigurationSource corsConfigurationSource() {
+    //     CorsConfiguration configuration = new CorsConfiguration();
         
-        // Origines autorisées (ex: http://localhost:4200)
-        configuration.setAllowedOrigins(parseList(allowedOrigins));
+    //     // Origines autorisées (ex: http://localhost:4200)
+    //     configuration.setAllowedOrigins(parseList(allowedOrigins));
         
-        // Méthodes HTTP autorisées
-        configuration.setAllowedMethods(parseList(allowedMethods));
+    //     // Méthodes HTTP autorisées
+    //     configuration.setAllowedMethods(parseList(allowedMethods));
         
-        // Headers autorisés
-        configuration.setAllowedHeaders(parseList(allowedHeaders));
+    //     // Headers autorisés
+    //     configuration.setAllowedHeaders(parseList(allowedHeaders));
         
-        // Headers exposés au client
-        configuration.setExposedHeaders(Arrays.asList(
-            "Authorization",
-            "Content-Type",
-            "X-Total-Count"
-        ));
+    //     // Headers exposés au client
+    //     configuration.setExposedHeaders(Arrays.asList(
+    //         "Authorization",
+    //         "Content-Type",
+    //         "X-Total-Count"
+    //     ));
         
-        // Autoriser les credentials (cookies, authorization headers)
-        configuration.setAllowCredentials(allowCredentials);
+    //     // Autoriser les credentials (cookies, authorization headers)
+    //     configuration.setAllowCredentials(allowCredentials);
         
-        // Durée de cache de la configuration CORS (en secondes)
-        configuration.setMaxAge(maxAge);
+    //     // Durée de cache de la configuration CORS (en secondes)
+    //     configuration.setMaxAge(maxAge);
         
-        // Appliquer cette configuration à tous les endpoints
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
+    //     // Appliquer cette configuration à tous les endpoints
+    //     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+    //     source.registerCorsConfiguration("/**", configuration);
         
-        return source;
-    }
+    //     return source;
+    // }
     
-    /**
-     * Parse une chaîne séparée par des virgules en liste
-     * 
-     * @param value Chaîne à parser (ex: "GET,POST,PUT")
-     * @return Liste de valeurs
-     */
-    private List<String> parseList(String value) {
-        if (value == null || value.isEmpty()) {
-            return Arrays.asList("*");
-        }
-        return Arrays.asList(value.split(","));
-    }
+    // /**
+    //  * Parse une chaîne séparée par des virgules en liste
+    //  * 
+    //  * @param value Chaîne à parser (ex: "GET,POST,PUT")
+    //  * @return Liste de valeurs
+    //  */
+    // private List<String> parseList(String value) {
+    //     if (value == null || value.isEmpty()) {
+    //         return Arrays.asList("*");
+    //     }
+    //     return Arrays.asList(value.split(","));
+    // }
 }
