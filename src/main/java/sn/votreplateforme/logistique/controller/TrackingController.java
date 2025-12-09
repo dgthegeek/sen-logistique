@@ -36,7 +36,7 @@ public class TrackingController implements TrackingApi {
      */
     @Override
     public ResponseEntity<TrackingResponse> trackingNumeroTrackingGet(String numeroTracking) {
-        log.info("ðŸ” Consultation tracking public: {}", numeroTracking);
+        log.info("Consultation tracking public: {}", numeroTracking);
 
         TrackingResponse response = trackingService.getTrackingInfo(numeroTracking);
 

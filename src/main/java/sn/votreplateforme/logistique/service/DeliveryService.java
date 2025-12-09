@@ -43,19 +43,20 @@ public class DeliveryService {
     public DeliveryInfoResponse getDeliveryInfo(String numeroTracking) {
         log.info("RÃ©cupÃ©ration infos delivery pour: {}", numeroTracking);
 
-        // 1. RÃ©cupÃ©rer la livraison
+        // 1. Recuperer la livraison
         Livraison livraison = livraisonRepository.findByNumeroTracking(numeroTracking)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "Colis non trouvÃ©: " + numeroTracking
+                        "Colis non trouvee: " + numeroTracking
                 ));
 
-        // 2. VÃ©rifier que le colis est au bon statut (RAMASSE)
+        // 2. Verifier que le colis est au bon statut (RAMASSE)
         if (livraison.getStatut() != StatutLivraison.RAMASSE) {
             log.warn("Tentative de livraison d'un colis pas au statut RAMASSE: {} - Statut actuel: {}",
                     numeroTracking, livraison.getStatut());
-
-            // On retourne quand mÃªme les infos mais avec un avertissement dans les logs
+            throw new ResourceNotFoundException("Colis non trouvee: " + numeroTracking);
         }
+
+        System.out.println("livraison: "+livraison.getStatut());
 
         // 3. Construire le DTO selon le schÃ©ma OpenAPI
         DeliveryInfoResponse response = new DeliveryInfoResponse();

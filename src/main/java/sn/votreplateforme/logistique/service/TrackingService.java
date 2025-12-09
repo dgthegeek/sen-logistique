@@ -33,7 +33,7 @@ public class TrackingService {
     /**
      * RÃ©cupÃ¨re les informations de tracking public d'un colis
      *
-     * @param numeroTracking NumÃ©ro de tracking
+     * @param numeroTracking Numero de tracking
      * @return TrackingResponse avec timeline et statut actuel
      */
     public TrackingResponse getTrackingInfo(String numeroTracking) {
@@ -42,10 +42,10 @@ public class TrackingService {
         // 1. RÃ©cupÃ©rer la livraison
         Livraison livraison = livraisonRepository.findByNumeroTracking(numeroTracking)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "Colis non trouvÃ©: " + numeroTracking
+                        "Colis non trouvee: " + numeroTracking
                 ));
 
-        // 2. Construire la rÃ©ponse selon le schÃ©ma OpenAPI
+        // 2. Construire la repponse selon le schema OpenAPI
         TrackingResponse response = new TrackingResponse();
         response.setNumeroTracking(numeroTracking);
         response.setStatut(sn.votreplateforme.logistique.dto.StatutLivraison.valueOf(String.valueOf(livraison.getStatut())));
@@ -56,7 +56,7 @@ public class TrackingService {
         List<TrackingResponseTimelineInner> timeline = construireTimeline(livraison);
         response.setTimeline(timeline);
 
-        log.info("Tracking {} rÃ©cupÃ©rÃ© - Statut: {}, Destination: {}",
+        log.info("Tracking {} recuperer - Statut: {}, Destination: {}",
                 numeroTracking,
                 livraison.getStatut(),
                 livraison.getAdresseDestination().getQuartier()

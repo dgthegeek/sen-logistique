@@ -66,6 +66,7 @@ public class LivraisonService {
         TypeUrgence urgenceEntity = (request.getUrgence() != null)
                 ? TypeUrgence.valueOf(request.getUrgence().name())
                 : TypeUrgence.NORMAL;
+        if (request.getPoids() == null) {request.setPoids(3d); }
 
         BigDecimal fraisLivraison = tarifCalculator.calculer(zone, urgenceEntity, request.getPoids());
 
