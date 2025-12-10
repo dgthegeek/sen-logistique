@@ -2,8 +2,10 @@ package sn.votreplateforme.logistique.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import sn.votreplateforme.logistique.dto.StatutVendeur;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -92,6 +94,21 @@ public class Vendeur extends User {
     @OneToMany(mappedBy = "vendeur", cascade = CascadeType.ALL)
     @Builder.Default
     private List<Transaction> transactions = new ArrayList<>();
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 50)
+    @Builder.Default
+    private StatutVendeur statut = StatutVendeur.EN_ATTENTE_VALIDATION;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "valide_par")
+    private Admin validePar;
+
+    @Column(name = "valide_le")
+    private LocalDateTime valideLe;
+
+    @Column(name = "raison_suspension", columnDefinition = "TEXT")
+    private String raisonSuspension;
 
     // ==================== MÉTHODES UTILITAIRES ====================
 

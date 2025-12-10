@@ -9,10 +9,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import sn.votreplateforme.logistique.dto.AuthResponse;
-import sn.votreplateforme.logistique.dto.LoginRequest;
-import sn.votreplateforme.logistique.dto.RegisterRequest;
-import sn.votreplateforme.logistique.dto.UserInfo;
+import sn.votreplateforme.logistique.dto.*;
 import sn.votreplateforme.logistique.entity.User;
 import sn.votreplateforme.logistique.entity.UserRole;
 import sn.votreplateforme.logistique.entity.Vendeur;
@@ -163,6 +160,7 @@ public class AuthService {
         if (user instanceof Vendeur) {
             Vendeur vendeur = (Vendeur) user;
             userInfo.setNomBoutique(vendeur.getNomBoutique());
+            userInfo.setStatut(StatutVendeur.fromValue(vendeur.getStatut().name()));
         }
 
         // Créer AuthResponse

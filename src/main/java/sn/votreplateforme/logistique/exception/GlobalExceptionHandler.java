@@ -209,4 +209,18 @@ public class GlobalExceptionHandler {
             .status(HttpStatus.INTERNAL_SERVER_ERROR)
             .body(errorResponse);
     }
+
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<ErrorResponse> handleForbiddenException(ForbiddenException ex) {
+        ErrorResponse error = new ErrorResponse();
+        error.setTimestamp(OffsetDateTime.now());
+        error.setStatus(403);
+        error.setError("Forbidden");
+        error.setMessage(ex.getMessage());
+        return ResponseEntity.status(403).body(error);
+    }
+
+
+
+
 }

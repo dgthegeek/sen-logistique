@@ -2,24 +2,24 @@ openapi: 3.0.3
 info:
   title: Plateforme Logistique Dakar API
   description: |
-    API pour la gestion de livraisons pour vendeurs à Dakar.
+    API pour la gestion de livraisons pour petits vendeurs Instagram/Facebook Ã  Dakar.
     
-    **Fonctionnalités principales :**
-    - Gestion des livraisons (création, suivi, statuts)
-    - Ramassages groupés par zones
+    **FonctionnalitÃ©s principales :**
+    - Gestion des livraisons (crÃ©ation, suivi, statuts)
+    - Ramassages groupÃ©s par zones
     - Notifications WhatsApp automatiques
-    - Gestion financière (Cash on Delivery)
+    - Gestion financiÃ¨re (Cash on Delivery)
     - Tracking public des colis
     
     **Authentification :** JWT Bearer Token
   version: 1.0.0-MVP
   contact:
     name: Plateforme Logistique Dakar
-    email: damegaye1887@gmail.com
+    email: contact@votreplateforme.sn
 
 servers:
   - url: http://localhost:8080/api
-    description: Serveur de développement
+    description: Serveur de dÃ©veloppement
   - url: https://api.votreplateforme.sn/api
     description: Serveur de production
 
@@ -27,13 +27,15 @@ tags:
   - name: Authentication
     description: Endpoints d'authentification et gestion des comptes
   - name: Vendeur
-    description: Endpoints pour les vendeurs (création livraisons, finances, etc.)
+    description: Endpoints pour les vendeurs (crÃ©ation livraisons, finances, etc.)
+  - name: Admin - Vendeurs
+    description: Gestion et validation des vendeurs
   - name: Admin - Ramassages
-    description: Gestion des ramassages groupés
+    description: Gestion des ramassages groupÃ©s
   - name: Admin - Livraisons
-    description: Gestion des livraisons à effectuer
+    description: Gestion des livraisons Ã  effectuer
   - name: Admin - Finances
-    description: Gestion financière et paiements vendeurs
+    description: Gestion financiÃ¨re et paiements vendeurs
   - name: Delivery
     description: Confirmation de livraison (via scan QR)
   - name: Tracking
@@ -62,19 +64,19 @@ paths:
               $ref: '#/components/schemas/RegisterRequest'
       responses:
         '201':
-          description: Inscription réussie
+          description: Inscription rÃ©ussie
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthResponse'
         '400':
-          description: Données invalides
+          description: DonnÃ©es invalides
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '409':
-          description: Utilisateur déjà existant
+          description: Utilisateur dÃ©jÃ  existant
           content:
             application/json:
               schema:
@@ -94,7 +96,7 @@ paths:
               $ref: '#/components/schemas/LoginRequest'
       responses:
         '200':
-          description: Connexion réussie
+          description: Connexion rÃ©ussie
           content:
             application/json:
               schema:
@@ -110,7 +112,7 @@ paths:
     post:
       tags:
         - Authentication
-      summary: Rafraîchir le token JWT
+      summary: RafraÃ®chir le token JWT
       requestBody:
         required: true
         content:
@@ -124,7 +126,7 @@ paths:
                   type: string
       responses:
         '200':
-          description: Token rafraîchi
+          description: Token rafraÃ®chi
           content:
             application/json:
               schema:
@@ -140,7 +142,7 @@ paths:
     post:
       tags:
         - Authentication
-      summary: Demande de réinitialisation de mot de passe
+      summary: Demande de rÃ©initialisation de mot de passe
       security: []
       requestBody:
         required: true
@@ -156,7 +158,7 @@ paths:
                   example: "771234567"
       responses:
         '200':
-          description: Message de réinitialisation envoyé
+          description: Message de rÃ©initialisation envoyÃ©
           content:
             application/json:
               schema:
@@ -164,9 +166,9 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Code de réinitialisation envoyé par WhatsApp"
+                    example: "Code de rÃ©initialisation envoyÃ© par WhatsApp"
         '404':
-          description: Utilisateur non trouvé
+          description: Utilisateur non trouvÃ©
           content:
             application/json:
               schema:
@@ -180,10 +182,10 @@ paths:
       tags:
         - Vendeur
       summary: Tableau de bord du vendeur
-      description: Statistiques du jour (total colis, livrés, en cours)
+      description: Statistiques du jour (total colis, livrÃ©s, en cours)
       responses:
         '200':
-          description: Dashboard récupéré avec succès
+          description: Dashboard rÃ©cupÃ©rÃ© avec succÃ¨s
           content:
             application/json:
               schema:
@@ -221,11 +223,11 @@ paths:
                 $ref: '#/components/schemas/PageLivraison'
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-    
+
     post:
       tags:
         - Vendeur
-      summary: Créer une nouvelle livraison
+      summary: CrÃ©er une nouvelle livraison
       requestBody:
         required: true
         content:
@@ -234,13 +236,13 @@ paths:
               $ref: '#/components/schemas/CreateLivraisonRequest'
       responses:
         '201':
-          description: Livraison créée avec succès
+          description: Livraison crÃ©Ã©e avec succÃ¨s
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/LivraisonResponse'
         '400':
-          description: Données invalides
+          description: DonnÃ©es invalides
           content:
             application/json:
               schema:
@@ -252,7 +254,7 @@ paths:
     get:
       tags:
         - Vendeur
-      summary: Détails d'une livraison
+      summary: DÃ©tails d'une livraison
       parameters:
         - name: id
           in: path
@@ -262,13 +264,13 @@ paths:
             format: int64
       responses:
         '200':
-          description: Détails de la livraison
+          description: DÃ©tails de la livraison
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/LivraisonDetailResponse'
         '404':
-          description: Livraison non trouvée
+          description: Livraison non trouvÃ©e
           content:
             application/json:
               schema:
@@ -280,11 +282,11 @@ paths:
     get:
       tags:
         - Vendeur
-      summary: État financier du vendeur
+      summary: Ã‰tat financier du vendeur
       description: Solde en attente, historique des paiements, statistiques du mois
       responses:
         '200':
-          description: Finances récupérées
+          description: Finances rÃ©cupÃ©rÃ©es
           content:
             application/json:
               schema:
@@ -297,10 +299,10 @@ paths:
       tags:
         - Vendeur
       summary: Demander un paiement
-      description: Le vendeur demande à récupérer son solde en cash
+      description: Le vendeur demande Ã  rÃ©cupÃ©rer son solde en cash
       responses:
         '200':
-          description: Demande de paiement créée
+          description: Demande de paiement crÃ©Ã©e
           content:
             application/json:
               schema:
@@ -308,13 +310,13 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Demande de paiement envoyée à l'admin"
+                    example: "Demande de paiement envoyÃ©e Ã  l'admin"
                   montant:
                     type: number
                     format: decimal
                     example: 387500
         '400':
-          description: Solde insuffisant ou demande déjà en cours
+          description: Solde insuffisant ou demande dÃ©jÃ  en cours
           content:
             application/json:
               schema:
@@ -367,7 +369,7 @@ paths:
       tags:
         - Admin - Ramassages
       summary: Ramassages du jour
-      description: Liste des colis en attente de ramassage aujourd'hui, groupés par zone
+      description: Liste des colis en attente de ramassage aujourd'hui, groupÃ©s par zone
       responses:
         '200':
           description: Ramassages du jour
@@ -393,14 +395,14 @@ paths:
       tags:
         - Admin - Ramassages
       summary: Notifier les vendeurs d'une zone
-      description: Envoie un message WhatsApp groupé aux vendeurs pour préparer leurs colis
+      description: Envoie un message WhatsApp groupÃ© aux vendeurs pour prÃ©parer leurs colis
       parameters:
         - name: zoneNom
           in: path
           required: true
           schema:
             type: string
-            example: "Sacré-Coeur"
+            example: "SacrÃ©-Coeur"
       requestBody:
         required: true
         content:
@@ -413,7 +415,7 @@ paths:
                   example: "15h"
       responses:
         '200':
-          description: Notifications envoyées
+          description: Notifications envoyÃ©es
           content:
             application/json:
               schema:
@@ -421,7 +423,7 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "3 vendeurs notifiés"
+                    example: "3 vendeurs notifiÃ©s"
                   vendeursNotifies:
                     type: integer
                     example: 3
@@ -434,7 +436,7 @@ paths:
     post:
       tags:
         - Admin - Ramassages
-      summary: Marquer des colis comme ramassés
+      summary: Marquer des colis comme ramassÃ©s
       description: Change le statut des colis en "RAMASSE" et envoie les notifications
       requestBody:
         required: true
@@ -453,7 +455,7 @@ paths:
                   example: [1, 2, 3, 4, 5]
       responses:
         '200':
-          description: Colis marqués comme ramassés
+          description: Colis marquÃ©s comme ramassÃ©s
           content:
             application/json:
               schema:
@@ -461,7 +463,7 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "5 colis marqués comme ramassés"
+                    example: "5 colis marquÃ©s comme ramassÃ©s"
                   colisRamasses:
                     type: integer
                     example: 5
@@ -480,8 +482,8 @@ paths:
     post:
       tags:
         - Admin - Ramassages
-      summary: Générer un PDF avec les QR codes
-      description: Génère un PDF avec tous les QR codes des colis ramassés
+      summary: GÃ©nÃ©rer un PDF avec les QR codes
+      description: GÃ©nÃ¨re un PDF avec tous les QR codes des colis ramassÃ©s
       requestBody:
         required: true
         content:
@@ -499,7 +501,7 @@ paths:
                   example: [1, 2, 3]
       responses:
         '200':
-          description: PDF généré
+          description: PDF gÃ©nÃ©rÃ©
           content:
             application/pdf:
               schema:
@@ -560,8 +562,8 @@ paths:
     get:
       tags:
         - Admin - Livraisons
-      summary: Colis à livrer
-      description: Liste des colis avec statut RAMASSE, prêts pour livraison
+      summary: Colis Ã  livrer
+      description: Liste des colis avec statut RAMASSE, prÃªts pour livraison
       parameters:
         - name: zone
           in: query
@@ -569,7 +571,7 @@ paths:
             type: string
       responses:
         '200':
-          description: Colis à livrer
+          description: Colis Ã  livrer
           content:
             application/json:
               schema:
@@ -591,7 +593,7 @@ paths:
     get:
       tags:
         - Admin - Livraisons
-      summary: Détails d'une livraison (admin)
+      summary: DÃ©tails d'une livraison (admin)
       parameters:
         - name: id
           in: path
@@ -601,13 +603,326 @@ paths:
             format: int64
       responses:
         '200':
-          description: Détails de la livraison
+          description: DÃ©tails de la livraison
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/LivraisonDetailResponse'
         '404':
-          description: Livraison non trouvée
+          description: Livraison non trouvÃ©e
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+
+  # ============================================
+  # ADMIN - VENDEURS
+  # ============================================
+  /admin/vendeurs/en-attente:
+    get:
+      tags:
+        - Admin - Vendeurs
+      summary: Liste des vendeurs en attente de validation
+      description: Vendeurs qui se sont inscrits mais n'ont pas encore Ã©tÃ© validÃ©s
+      responses:
+        '200':
+          description: Liste des vendeurs en attente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  vendeurs:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/VendeurDTO'
+                  total:
+                    type: integer
+                    example: 5
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /admin/vendeurs:
+    get:
+      tags:
+        - Admin - Vendeurs
+      summary: Liste de tous les vendeurs avec filtres
+      description: Liste paginÃ©e de tous les vendeurs avec possibilitÃ© de filtrer
+      parameters:
+        - name: statut
+          in: query
+          schema:
+            $ref: '#/components/schemas/StatutVendeur'
+          description: Filtrer par statut
+        - name: quartier
+          in: query
+          schema:
+            type: string
+          description: Filtrer par quartier
+        - name: commune
+          in: query
+          schema:
+            type: string
+          description: Filtrer par commune
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Recherche par nom, prÃ©nom, tÃ©lÃ©phone ou boutique
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [dateInscription, nombreLivraisons, chiffreAffaires]
+            default: dateInscription
+          description: Tri
+        - name: order
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Liste paginÃ©e des vendeurs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageVendeur'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /admin/vendeurs/{id}:
+    get:
+      tags:
+        - Admin - Vendeurs
+      summary: DÃ©tails complets d'un vendeur
+      description: Informations dÃ©taillÃ©es + statistiques du vendeur
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: DÃ©tails du vendeur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VendeurDetailDTO'
+        '404':
+          description: Vendeur non trouvÃ©
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /admin/vendeurs/{id}/valider:
+    post:
+      tags:
+        - Admin - Vendeurs
+      summary: Valider un vendeur
+      description: Change le statut du vendeur Ã  ACTIF, il peut dÃ©sormais utiliser la plateforme
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Vendeur validÃ©
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Vendeur validÃ© avec succÃ¨s"
+                  vendeur:
+                    $ref: '#/components/schemas/VendeurDTO'
+        '400':
+          description: Vendeur dÃ©jÃ  validÃ© ou statut incompatible
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Vendeur non trouvÃ©
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /admin/vendeurs/{id}/suspendre:
+    post:
+      tags:
+        - Admin - Vendeurs
+      summary: Suspendre un vendeur
+      description: Change le statut Ã  SUSPENDU, le vendeur ne peut plus utiliser la plateforme
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - raison
+              properties:
+                raison:
+                  type: string
+                  example: "Non-paiement rÃ©pÃ©tÃ© des frais de livraison"
+      responses:
+        '200':
+          description: Vendeur suspendu
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Vendeur suspendu"
+                  vendeur:
+                    $ref: '#/components/schemas/VendeurDTO'
+        '400':
+          description: Statut incompatible
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Vendeur non trouvÃ©
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /admin/vendeurs/{id}/bloquer:
+    post:
+      tags:
+        - Admin - Vendeurs
+      summary: Bloquer dÃ©finitivement un vendeur
+      description: Change le statut Ã  BLOQUE, blocage permanent (fraude, etc.)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - raison
+              properties:
+                raison:
+                  type: string
+                  example: "Fraude confirmÃ©e - fausses livraisons"
+      responses:
+        '200':
+          description: Vendeur bloquÃ©
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Vendeur bloquÃ© dÃ©finitivement"
+                  vendeur:
+                    $ref: '#/components/schemas/VendeurDTO'
+        '404':
+          description: Vendeur non trouvÃ©
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /admin/vendeurs/{id}/reactiver:
+    post:
+      tags:
+        - Admin - Vendeurs
+      summary: RÃ©activer un vendeur suspendu
+      description: Remet le statut Ã  ACTIF pour un vendeur SUSPENDU
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Vendeur rÃ©activÃ©
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Vendeur rÃ©activÃ© avec succÃ¨s"
+                  vendeur:
+                    $ref: '#/components/schemas/VendeurDTO'
+        '400':
+          description: Vendeur non suspendu ou bloquÃ©
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Vendeur non trouvÃ©
           content:
             application/json:
               schema:
@@ -625,7 +940,7 @@ paths:
       tags:
         - Admin - Finances
       summary: Dashboard financier
-      description: Vue d'ensemble des finances (cash collecté, à payer, commissions)
+      description: Vue d'ensemble des finances (cash collectÃ©, Ã  payer, commissions)
       parameters:
         - name: periode
           in: query
@@ -650,7 +965,7 @@ paths:
       tags:
         - Admin - Finances
       summary: Demandes de paiement en attente
-      description: Liste des vendeurs ayant demandé un paiement
+      description: Liste des vendeurs ayant demandÃ© un paiement
       responses:
         '200':
           description: Liste des demandes de paiement
@@ -677,7 +992,7 @@ paths:
       tags:
         - Admin - Finances
       summary: Payer un vendeur en cash
-      description: Marque le paiement comme effectué après remise du cash
+      description: Marque le paiement comme effectuÃ© aprÃ¨s remise du cash
       parameters:
         - name: vendeurId
           in: path
@@ -703,7 +1018,7 @@ paths:
                   example: "Paiement en cash remis au vendeur"
       responses:
         '200':
-          description: Paiement effectué
+          description: Paiement effectuÃ©
           content:
             application/json:
               schema:
@@ -711,7 +1026,7 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Paiement de 387,500 FCFA effectué"
+                    example: "Paiement de 387,500 FCFA effectuÃ©"
                   reference:
                     type: string
                     example: "PAY-20251116-001"
@@ -776,8 +1091,8 @@ paths:
     get:
       tags:
         - Delivery
-      summary: Récupérer les infos de livraison (via QR scan)
-      description: Endpoint appelé après scan du QR code, retourne les infos pré-remplies
+      summary: RÃ©cupÃ©rer les infos de livraison (via QR scan)
+      description: Endpoint appelÃ© aprÃ¨s scan du QR code, retourne les infos prÃ©-remplies
       security: []
       parameters:
         - name: numeroTracking
@@ -794,7 +1109,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/DeliveryInfoResponse'
         '404':
-          description: Colis non trouvé
+          description: Colis non trouvÃ©
           content:
             application/json:
               schema:
@@ -805,7 +1120,7 @@ paths:
       tags:
         - Delivery
       summary: Confirmer la livraison
-      description: Marque le colis comme livré après remise au client
+      description: Marque le colis comme livrÃ© aprÃ¨s remise au client
       security: []
       parameters:
         - name: numeroTracking
@@ -822,7 +1137,7 @@ paths:
               $ref: '#/components/schemas/ConfirmLivraisonRequest'
       responses:
         '200':
-          description: Livraison confirmée
+          description: Livraison confirmÃ©e
           content:
             application/json:
               schema:
@@ -830,18 +1145,18 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Livraison confirmée avec succès"
+                    example: "Livraison confirmÃ©e avec succÃ¨s"
                   numeroTracking:
                     type: string
                     example: "DKR-00567"
         '400':
-          description: Données invalides ou colis pas dans le bon statut
+          description: DonnÃ©es invalides ou colis pas dans le bon statut
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: Colis non trouvé
+          description: Colis non trouvÃ©
           content:
             application/json:
               schema:
@@ -872,7 +1187,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/TrackingResponse'
         '404':
-          description: Colis non trouvé
+          description: Colis non trouvÃ©
           content:
             application/json:
               schema:
@@ -902,7 +1217,7 @@ paths:
       tags:
         - Zones
       summary: Liste des quartiers d'une commune
-      description: Pour l'auto-complétion dans le formulaire
+      description: Pour l'auto-complÃ©tion dans le formulaire
       security: []
       parameters:
         - name: commune
@@ -947,13 +1262,13 @@ paths:
                   example: 2.5
       responses:
         '200':
-          description: Tarif calculé
+          description: Tarif calculÃ©
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/TarifResponse'
         '400':
-          description: Données invalides
+          description: DonnÃ©es invalides
           content:
             application/json:
               schema:
@@ -976,9 +1291,9 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
-    
+
     ForbiddenError:
-      description: Accès refusé (permissions insuffisantes)
+      description: AccÃ¨s refusÃ© (permissions insuffisantes)
       content:
         application/json:
           schema:
@@ -1022,7 +1337,7 @@ components:
           example: "Fatou Fashion"
         categorieActivite:
           type: string
-          example: "Vêtements"
+          example: "VÃªtements"
         instagram:
           type: string
           example: "@fatoufashion"
@@ -1034,7 +1349,7 @@ components:
           example: "Dakar"
         quartier:
           type: string
-          example: "Sacré-Coeur"
+          example: "SacrÃ©-Coeur"
         adresseComplete:
           type: string
           example: "Rue SC-23, Villa 45"
@@ -1084,6 +1399,8 @@ components:
           $ref: '#/components/schemas/UserRole'
         nomBoutique:
           type: string
+        statut:
+          $ref: '#/components/schemas/StatutVendeur'
 
     # ============================================
     # LIVRAISON SCHEMAS
@@ -1102,7 +1419,7 @@ components:
       properties:
         nomClient:
           type: string
-          example: "Aïssatou Ndiaye"
+          example: "AÃ¯ssatou Ndiaye"
         telephoneClient:
           type: string
           pattern: '^(77|78|76|70|75)[0-9]{7}$'
@@ -1115,10 +1432,10 @@ components:
           example: "Mermoz"
         adresseComplete:
           type: string
-          example: "Cité Biagui, Villa 45"
+          example: "CitÃ© Biagui, Villa 45"
         pointRepere:
           type: string
-          example: "Face à la mosquée"
+          example: "Face Ã  la mosquÃ©e"
         descriptionProduit:
           type: string
           example: "Ensemble wax"
@@ -1181,7 +1498,7 @@ components:
           example: 33500
         message:
           type: string
-          example: "Livraison créée avec succès ! Écrivez #DKR-00567 sur votre colis."
+          example: "Livraison crÃ©Ã©e avec succÃ¨s ! Ã‰crivez #DKR-00567 sur votre colis."
 
     LivraisonDetailResponse:
       type: object
@@ -1301,7 +1618,7 @@ components:
               example: 145000
             prochainPaiement:
               type: string
-              description: "À la demande du vendeur"
+              description: "Ã€ la demande du vendeur"
               example: "Sur demande"
 
     VendeurFinances:
@@ -1350,7 +1667,7 @@ components:
       properties:
         zone:
           type: string
-          example: "Sacré-Coeur"
+          example: "SacrÃ©-Coeur"
         nombreColis:
           type: integer
           example: 8
@@ -1512,6 +1829,131 @@ components:
         totalPages:
           type: integer
 
+
+    # ============================================
+    # VENDEUR SCHEMAS (Admin)
+    # ============================================
+    VendeurDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 15
+        nom:
+          type: string
+          example: "Diop"
+        prenom:
+          type: string
+          example: "Fatou"
+        telephone:
+          type: string
+          example: "771234567"
+        email:
+          type: string
+          example: "fatou@example.com"
+        nomBoutique:
+          type: string
+          example: "Fatou Fashion"
+        categorieActivite:
+          type: string
+          example: "VÃªtements"
+        instagram:
+          type: string
+          example: "@fatoufashion"
+        facebook:
+          type: string
+          example: "Fatou Fashion Store"
+        commune:
+          type: string
+          example: "Dakar"
+        quartier:
+          type: string
+          example: "Mermoz"
+        adresseComplete:
+          type: string
+          example: "Mermoz, CitÃ© Biagui, Rue 45"
+        statut:
+          $ref: '#/components/schemas/StatutVendeur'
+        dateInscription:
+          type: string
+          format: date-time
+          example: "2025-12-01T10:30:00Z"
+        valideLe:
+          type: string
+          format: date-time
+          example: "2025-12-02T14:20:00Z"
+        soldeEnAttente:
+          type: number
+          format: decimal
+          example: 125000.00
+        raisonSuspension:
+          type: string
+          example: "Non-paiement rÃ©pÃ©tÃ© des frais de livraison"
+
+    VendeurDetailDTO:
+      allOf:
+        - $ref: '#/components/schemas/VendeurDTO'
+        - type: object
+          properties:
+            validePar:
+              type: object
+              properties:
+                id:
+                  type: integer
+                  format: int64
+                nom:
+                  type: string
+                prenom:
+                  type: string
+            statistiques:
+              type: object
+              properties:
+                nombreLivraisons:
+                  type: integer
+                  example: 47
+                nombreLivraisonsReussies:
+                  type: integer
+                  example: 43
+                nombreEnCours:
+                  type: integer
+                  example: 2
+                tauxReussite:
+                  type: number
+                  format: double
+                  example: 91.49
+                  description: Pourcentage de livraisons rÃ©ussies
+                chiffreAffairesTotal:
+                  type: number
+                  format: decimal
+                  example: 2340000.00
+                  description: Total des montants COD collectÃ©s
+                derniereActivite:
+                  type: string
+                  format: date-time
+                  example: "2025-12-06T16:45:00Z"
+                  description: Date de la derniÃ¨re livraison crÃ©Ã©e
+
+    PageVendeur:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/VendeurDTO'
+        page:
+          type: integer
+          example: 0
+        size:
+          type: integer
+          example: 20
+        totalElements:
+          type: integer
+          example: 47
+        totalPages:
+          type: integer
+          example: 3
+
     # ============================================
     # DELIVERY SCHEMAS
     # ============================================
@@ -1526,16 +1968,16 @@ components:
           properties:
             nom:
               type: string
-              example: "Aïssatou Ndiaye"
+              example: "AÃ¯ssatou Ndiaye"
             telephone:
               type: string
               example: "772345678"
             adresse:
               type: string
-              example: "Mermoz, Cité Biagui, Villa 45"
+              example: "Mermoz, CitÃ© Biagui, Villa 45"
             pointRepere:
               type: string
-              example: "Face à la mosquée"
+              example: "Face Ã  la mosquÃ©e"
         produit:
           type: object
           properties:
@@ -1697,6 +2139,19 @@ components:
         - NORMAL
         - EXPRESS
       default: NORMAL
+
+    StatutVendeur:
+      type: string
+      enum:
+        - EN_ATTENTE_VALIDATION
+        - ACTIF
+        - SUSPENDU
+        - BLOQUE
+      description: |
+        - EN_ATTENTE_VALIDATION: Vendeur inscrit mais pas encore valide par admin
+        - ACTIF: Vendeur valide, peut utiliser la plateforme
+        - SUSPENDU: Temporairement desactive (peut etre reaactive)
+        - BLOQUE: Definitivement bloque (fraude, etc.)
 
     # ============================================
     # ERROR SCHEMA

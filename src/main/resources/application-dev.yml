@@ -1,0 +1,38 @@
+
+# Base de données locale (PostgreSQL)
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/logistique_dakar
+    username: logistique_user
+    password: logistique2024
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    properties:
+      hibernate:
+
+  flyway:
+    enabled: true
+
+# Logging détaillé en DEV
+logging:
+  level:
+    root: DEBUG
+    sn.votreplateforme: DEBUG
+
+# Configuration Application
+app:
+  base-url: http://localhost:8080
+  tracking-url: http://localhost:4200/tracking
+
+  # CORS (tout autorisé en développement)
+  cors:
+    allowed-origins: "*"
+    allowed-methods: "*"
+    allowed-headers: "*"
+    allow-credentials: true
+    max-age: 3600
+
+# Twilio (désactivé en local)
+twilio:
+  enabled: false

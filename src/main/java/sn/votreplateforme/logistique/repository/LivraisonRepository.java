@@ -24,6 +24,9 @@ public interface LivraisonRepository extends JpaRepository<Livraison, Long> {
 
     // ==================== RECHERCHES PAR NUMERO TRACKING ====================
 
+    List<Livraison> findByVendeurId(Long vendeurId);
+
+
     Optional<Livraison> findByNumeroTracking(String numeroTracking);
 
     boolean existsByNumeroTracking(String numeroTracking);
@@ -130,4 +133,6 @@ public interface LivraisonRepository extends JpaRepository<Livraison, Long> {
             Vendeur vendeur,
             StatutLivraison statut
     );
+
+
 }

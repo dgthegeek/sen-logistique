@@ -37,11 +37,11 @@ public class DeliveryController implements DeliveryApi {
      */
     @Override
     public ResponseEntity<DeliveryInfoResponse> deliveryNumeroTrackingGet(String numeroTracking) {
-        log.info("ðŸ“± Scan QR code - RÃ©cupÃ©ration infos livraison: {}", numeroTracking);
+        log.info("Scan QR code - Recuperation infos livraison: {}", numeroTracking);
 
         DeliveryInfoResponse response = deliveryService.getDeliveryInfo(numeroTracking);
 
-        log.info("âœ… Infos livraison {} rÃ©cupÃ©rÃ©es avec succÃ¨s", numeroTracking);
+        log.info("Infos livraison {} recuperees avec success", numeroTracking);
         return ResponseEntity.ok(response);
     }
 
