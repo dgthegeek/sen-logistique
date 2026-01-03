@@ -134,5 +134,7 @@ public interface LivraisonRepository extends JpaRepository<Livraison, Long> {
             StatutLivraison statut
     );
 
+    long countByAdresseDestination_ZoneId(Long zoneId);
+
 
 }
