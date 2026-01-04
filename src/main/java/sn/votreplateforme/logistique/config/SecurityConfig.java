@@ -83,7 +83,8 @@ public class SecurityConfig {
 
 
                     // ==================== ENDPOINTS VENDEUR ====================
-                
+                .requestMatchers("/vendeur/livraisons/**").hasAnyRole("VENDEUR", "ADMIN")
+
                 // Endpoints vendeur - Nécessite rôle VENDEUR
                 .requestMatchers("/vendeur/**").hasRole("VENDEUR")
                 

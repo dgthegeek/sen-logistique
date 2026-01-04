@@ -108,7 +108,7 @@ public class VendeurController implements VendeurApi {
 
         try {
             // Vérifier le statut du vendeur
-            verifierVendeurActif();
+//            verifierVendeurActif();
 
             LivraisonResponse response = livraisonService.creerLivraison(createLivraisonRequest);
 

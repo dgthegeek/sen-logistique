@@ -1772,6 +1772,11 @@ components:
         - montantCOD
         - zoneId
       properties:
+        telephoneVendeur:
+          type: string
+          pattern: '^(77|78|76|70|75)[0-9]{7}$'
+          example: "771234567"
+          description: "Téléphone du vendeur (requis si admin, ignoré si vendeur)"
         nomClient:
           type: string
           example: "AÃ¯ssatou Ndiaye"

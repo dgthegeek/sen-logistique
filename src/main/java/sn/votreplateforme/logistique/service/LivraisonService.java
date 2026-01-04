@@ -12,15 +12,21 @@ import sn.votreplateforme.logistique.dto.CreateLivraisonRequest;
 import sn.votreplateforme.logistique.dto.LivraisonResponse;
 import sn.votreplateforme.logistique.dto.PageLivraison;
 import sn.votreplateforme.logistique.entity.*;
+import sn.votreplateforme.logistique.exception.BadRequestException;
+import sn.votreplateforme.logistique.exception.NotFoundException;
 import sn.votreplateforme.logistique.repository.LivraisonRepository;
+import sn.votreplateforme.logistique.repository.UserRepository;
 import sn.votreplateforme.logistique.repository.VendeurRepository;
 import sn.votreplateforme.logistique.security.SecurityUtils;
 import sn.votreplateforme.logistique.util.TarifCalculator;
 import sn.votreplateforme.logistique.util.TrackingNumberGenerator;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import sn.votreplateforme.logistique.entity.User;
+import sn.votreplateforme.logistique.entity.Admin;
+import sn.votreplateforme.logistique.exception.ForbiddenException;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -39,6 +45,7 @@ public class LivraisonService {
     private final QRCodeService qrCodeService;
     private final TarifCalculator tarifCalculator;
     private final TrackingNumberGenerator trackingNumberGenerator;
+    private final UserRepository userRepository;
 
     /**
      * Crée une nouvelle livraison
@@ -46,20 +53,43 @@ public class LivraisonService {
     @Transactional
     public LivraisonResponse creerLivraison(CreateLivraisonRequest request) {
         log.info("=== Création d'une nouvelle livraison ===");
-        log.debug("Client: {} - Destination: {}, {}",
-                request.getNomClient(), request.getQuartier(), request.getCommune());
 
-        // 1. Récupérer le vendeur connecté
-        String telephone = SecurityUtils.getCurrentUserTelephone();
-        Vendeur vendeur = vendeurRepository.findByTelephone(telephone)
-                .orElseThrow(() -> new IllegalStateException("Vendeur non trouvé"));
+        // 1. Récupérer l'utilisateur connecté
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String telephoneConnecte = auth.getName();
+
+        User userConnecte = userRepository.findByTelephone(telephoneConnecte)
+                .orElseThrow(() -> new NotFoundException("Utilisateur non trouvé"));
+
+        // 2. Déterminer le vendeur
+        Vendeur vendeur;
+
+        if (userConnecte instanceof Admin) {
+            // Admin → doit fournir telephoneVendeur
+            if (request.getTelephoneVendeur() == null || request.getTelephoneVendeur().isEmpty()) {
+                throw new BadRequestException("Le champ telephoneVendeur est requis pour un admin");
+            }
+
+            vendeur = vendeurRepository.findByTelephone(request.getTelephoneVendeur())
+                    .orElseThrow(() -> new NotFoundException("Vendeur non trouvé : " + request.getTelephoneVendeur()));
+
+            log.info("👤 Admin {} crée une livraison pour le vendeur {}",
+                    telephoneConnecte, request.getTelephoneVendeur());
+
+        } else if (userConnecte instanceof Vendeur) {
+            // Vendeur → utilise son propre compte (ignore telephoneVendeur)
+            vendeur = (Vendeur) userConnecte;
+
+            log.info("👤 Vendeur {} crée sa propre livraison", telephoneConnecte);
+
+        } else {
+            throw new ForbiddenException("Seuls les vendeurs et admins peuvent créer des livraisons");
+        }
 
         log.debug("Vendeur: {} {} (ID: {})", vendeur.getPrenom(), vendeur.getNom(), vendeur.getId());
 
-        // 2. Trouver la zone à partir du quartier
+        // 3. Trouver la zone à partir du quartier
         Zone zone = zoneService.findZoneByQuartier(request.getQuartier(), request.getCommune());
-
-        log.debug("Zone identifiée: {} (ID: {})", zone.getNom(), zone.getId());
 
         // 3. Calculer le tarif de livraison
         // Convertir le DTO TypeUrgence en Entity TypeUrgence
