@@ -33,6 +33,8 @@ public interface LivraisonRepository extends JpaRepository<Livraison, Long> {
 
     long countByNumeroTrackingStartingWith(String prefix);
 
+    long countByAdresseDestination_Quartier(String quartier);
+
     // ==================== RECHERCHES PAR VENDEUR ====================
 
     List<Livraison> findByVendeur(Vendeur vendeur);

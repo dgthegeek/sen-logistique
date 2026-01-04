@@ -1629,6 +1629,157 @@ paths:
           $ref: '#/components/responses/UnauthorizedError'
       security:
         - bearerAuth: [ ]
+
+  # ============================================
+  # ADMIN - QUARTIERS
+  # ============================================
+  /admin/quartiers:
+    post:
+      tags:
+        - Admin - Quartiers
+      summary: Créer un nouveau quartier
+      description: Ajoute un quartier à une zone
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateQuartierRequest'
+      responses:
+        '201':
+          description: Quartier créé avec succès
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminQuartiersPost201Response'
+        '400':
+          description: Données invalides ou quartier existe déjà
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - bearerAuth: [ ]
+
+  /admin/quartiers/{id}:
+    put:
+      tags:
+        - Admin - Quartiers
+      summary: Modifier un quartier
+      description: Modification d'un quartier (nom, commune, zone, statut)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateQuartierRequest'
+      responses:
+        '200':
+          description: Quartier modifié avec succès
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminQuartiersIdPut200Response'
+        '400':
+          description: Données invalides
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Quartier non trouvé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - bearerAuth: [ ]
+
+    delete:
+      tags:
+        - Admin - Quartiers
+      summary: Supprimer un quartier
+      description: Suppression d'un quartier (impossible si livraisons associées)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Quartier supprimé avec succès
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminQuartiersIdDelete200Response'
+        '400':
+          description: Impossible de supprimer (livraisons associées)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Quartier non trouvé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - bearerAuth: [ ]
+
+  /admin/quartiers/{id}/toggle:
+    patch:
+      tags:
+        - Admin - Quartiers
+      summary: Activer/Désactiver un quartier
+      description: Change le statut actif/inactif d'un quartier
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Statut du quartier modifié
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminQuartiersIdTogglePatch200Response'
+        '404':
+          description: Quartier non trouvé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - bearerAuth: [ ]
 # ============================================
 # COMPONENTS
 # ============================================
@@ -2902,4 +3053,116 @@ components:
           example: "Profil mis à jour avec succès"
         profil:
           $ref: '#/components/schemas/ProfilResponse'
+
+    CreateQuartierRequest:
+      type: object
+      required:
+        - nom
+        - commune
+        - zoneId
+      properties:
+        nom:
+          type: string
+          minLength: 2
+          maxLength: 100
+          example: "Sacré-Coeur 3"
+        commune:
+          type: string
+          minLength: 2
+          maxLength: 100
+          example: "Dakar"
+        zoneId:
+          type: integer
+          format: int64
+          example: 2
+        actif:
+          type: boolean
+          default: true
+
+    UpdateQuartierRequest:
+      type: object
+      required:
+        - nom
+        - commune
+        - zoneId
+      properties:
+        nom:
+          type: string
+          minLength: 2
+          maxLength: 100
+          example: "Sacré-Coeur 3"
+        commune:
+          type: string
+          minLength: 2
+          maxLength: 100
+          example: "Dakar"
+        zoneId:
+          type: integer
+          format: int64
+          example: 2
+        actif:
+          type: boolean
+
+    QuartierDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        nom:
+          type: string
+        commune:
+          type: string
+        actif:
+          type: boolean
+        zone:
+          type: object
+          properties:
+            id:
+              type: integer
+              format: int64
+            nom:
+              type: string
+
+    AdminQuartiersPost201Response:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Quartier créé avec succès"
+        quartier:
+          $ref: '#/components/schemas/QuartierDTO'
+
+    AdminQuartiersIdPut200Response:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Quartier modifié avec succès"
+        quartier:
+          $ref: '#/components/schemas/QuartierDTO'
+
+    AdminQuartiersIdDelete200Response:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Quartier supprimé avec succès"
+
+    AdminQuartiersIdTogglePatch200Response:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Quartier activé avec succès"
+        quartier:
+          type: object
+          properties:
+            id:
+              type: integer
+              format: int64
+            nom:
+              type: string
+            actif:
+              type: boolean
 
