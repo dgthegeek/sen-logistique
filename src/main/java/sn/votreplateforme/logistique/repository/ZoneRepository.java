@@ -1,6 +1,10 @@
 package sn.votreplateforme.logistique.repository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import sn.votreplateforme.logistique.entity.Zone;
 
@@ -12,44 +16,24 @@ import java.util.Optional;
  */
 @Repository
 public interface ZoneRepository extends JpaRepository<Zone, Long> {
-    
-    /**
-     * Trouve une zone par son nom
-     * 
-     * @param nom Nom de la zone (ex: "Zone 1", "Zone 2")
-     * @return Optional contenant la zone si trouvée
-     */
-    Optional<Zone> findByNom(String nom);
-    
-    /**
-     * Trouve toutes les zones actives
-     * Utilisé pour l'affichage dans le formulaire de création de livraison
-     * 
-     * @return Liste des zones actives
-     */
+
     List<Zone> findByActiveTrue();
-    
-    /**
-     * Trouve toutes les zones, ordonnées par tarif standard croissant
-     * Utile pour afficher les zones du moins cher au plus cher
-     * 
-     * @return Liste des zones triées par tarif
-     */
-    List<Zone> findAllByOrderByTarifStandardAsc();
-    
-    /**
-     * Compte le nombre de zones actives
-     * 
-     * @return Nombre de zones actives
-     */
-    long countByActiveTrue();
+
+    Optional<Zone> findByNom(String nom);
 
     /**
-     * Vérifie si une zone existe par son nom
-     *
-     * @param nom Nom de la zone
-     * @return true si la zone existe, false sinon
+     * Recherche avec filtres et pagination
      */
-    boolean existsByNom(String nom);
-
+    @Query(value = "SELECT * FROM zones z " +
+            "WHERE (:actif IS NULL OR z.active = :actif) " +
+            "AND (:search IS NULL OR " +
+            "     LOWER(z.nom) LIKE LOWER('%' || :search || '%') OR " +
+            "     LOWER(z.description) LIKE LOWER('%' || :search || '%')) " +
+            "ORDER BY z.nom ASC",
+            nativeQuery = true)
+    Page<Zone> searchZones(
+            @Param("actif") Boolean actif,
+            @Param("search") String search,
+            Pageable pageable
+    );
 }

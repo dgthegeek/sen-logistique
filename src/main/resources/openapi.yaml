@@ -1274,6 +1274,512 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+    # ============================================
+    # ADMIN - ZONES
+    # ============================================
+  /admin/zones:
+    get:
+      tags:
+        - Admin - Zones
+      summary: Liste de toutes les zones avec filtres
+      description: Liste paginée des zones de livraison avec possibilité de filtrer
+      parameters:
+        - name: actif
+          in: query
+          description: Filtrer par zones actives/inactives
+          schema:
+            type: boolean
+        - name: search
+          in: query
+          description: Recherche par nom ou description
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Liste paginée des zones
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageZone'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - bearerAuth: [ ]
+
+    post:
+      tags:
+        - Admin - Zones
+      summary: Créer une nouvelle zone
+      description: Création d'une nouvelle zone de livraison
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateZoneRequest'
+      responses:
+        '201':
+          description: Zone créée avec succès
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminZonesPost201Response'
+        '400':
+          description: Données invalides
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - bearerAuth: [ ]
+
+  /admin/zones/{id}:
+    get:
+      tags:
+        - Admin - Zones
+      summary: Détails d'une zone
+      description: Informations détaillées d'une zone avec la liste de ses quartiers
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Détails de la zone
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ZoneDetailDTO'
+        '404':
+          description: Zone non trouvée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - bearerAuth: [ ]
+
+    put:
+      tags:
+        - Admin - Zones
+      summary: Modifier une zone
+      description: Modification complète d'une zone (tous les champs)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateZoneRequest'
+      responses:
+        '200':
+          description: Zone modifiée avec succès
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminZonesIdPut200Response'
+        '400':
+          description: Données invalides
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Zone non trouvée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - bearerAuth: [ ]
+
+    delete:
+      tags:
+        - Admin - Zones
+      summary: Supprimer une zone
+      description: Suppression d'une zone (impossible si elle a des quartiers ou livraisons associés)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Zone supprimée avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Zone supprimée avec succès"
+        '400':
+          description: Impossible de supprimer (quartiers ou livraisons associés)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Zone non trouvée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - bearerAuth: [ ]
+
+  /admin/zones/{id}/tarifs:
+    patch:
+      tags:
+        - Admin - Zones
+      summary: Modifier les tarifs d'une zone
+      description: Modification uniquement des tarifs (standard et express)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTarifsRequest'
+      responses:
+        '200':
+          description: Tarifs mis à jour avec succès
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminZonesIdTarifsPatch200Response'
+        '400':
+          description: Données invalides
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Zone non trouvée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - bearerAuth: [ ]
+
+  /admin/zones/{id}/toggle:
+    patch:
+      tags:
+        - Admin - Zones
+      summary: Activer/Désactiver une zone
+      description: Change le statut actif/inactif d'une zone
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Statut de la zone modifié
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminZonesIdTogglePatch200Response'
+        '404':
+          description: Zone non trouvée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - bearerAuth: [ ]
+
+  # ============================================
+  # PROFIL UTILISATEUR (Vendeur + Admin)
+  # ============================================
+  /profil:
+    get:
+      tags:
+        - Profil
+      summary: Récupérer mon profil
+      description: Retourne les informations du profil de l'utilisateur connecté (vendeur ou admin)
+      responses:
+        '200':
+          description: Profil utilisateur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfilResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+      security:
+        - bearerAuth: [ ]
+
+    put:
+      tags:
+        - Profil
+      summary: Modifier mon profil
+      description: Mise à jour des informations du profil utilisateur
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProfilRequest'
+      responses:
+        '200':
+          description: Profil mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfilPut200Response'
+        '400':
+          description: Données invalides
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+      security:
+        - bearerAuth: [ ]
+
+  /profil/password:
+    patch:
+      tags:
+        - Profil
+      summary: Changer mon mot de passe
+      description: Modification du mot de passe de l'utilisateur connecté
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+      responses:
+        '200':
+          description: Mot de passe modifié
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Mot de passe modifié avec succès"
+        '400':
+          description: Ancien mot de passe incorrect
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+      security:
+        - bearerAuth: [ ]
+
+  # ============================================
+  # ADMIN - QUARTIERS
+  # ============================================
+  /admin/quartiers:
+    post:
+      tags:
+        - Admin - Quartiers
+      summary: Créer un nouveau quartier
+      description: Ajoute un quartier à une zone
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateQuartierRequest'
+      responses:
+        '201':
+          description: Quartier créé avec succès
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminQuartiersPost201Response'
+        '400':
+          description: Données invalides ou quartier existe déjà
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - bearerAuth: [ ]
+
+  /admin/quartiers/{id}:
+    put:
+      tags:
+        - Admin - Quartiers
+      summary: Modifier un quartier
+      description: Modification d'un quartier (nom, commune, zone, statut)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateQuartierRequest'
+      responses:
+        '200':
+          description: Quartier modifié avec succès
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminQuartiersIdPut200Response'
+        '400':
+          description: Données invalides
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Quartier non trouvé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - bearerAuth: [ ]
+
+    delete:
+      tags:
+        - Admin - Quartiers
+      summary: Supprimer un quartier
+      description: Suppression d'un quartier (impossible si livraisons associées)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Quartier supprimé avec succès
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminQuartiersIdDelete200Response'
+        '400':
+          description: Impossible de supprimer (livraisons associées)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Quartier non trouvé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - bearerAuth: [ ]
+
+  /admin/quartiers/{id}/toggle:
+    patch:
+      tags:
+        - Admin - Quartiers
+      summary: Activer/Désactiver un quartier
+      description: Change le statut actif/inactif d'un quartier
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Statut du quartier modifié
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminQuartiersIdTogglePatch200Response'
+        '404':
+          description: Quartier non trouvé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - bearerAuth: [ ]
 # ============================================
 # COMPONENTS
 # ============================================
@@ -1417,6 +1923,11 @@ components:
         - montantCOD
         - zoneId
       properties:
+        telephoneVendeur:
+          type: string
+          pattern: '^(77|78|76|70|75)[0-9]{7}$'
+          example: "771234567"
+          description: "Téléphone du vendeur (requis si admin, ignoré si vendeur)"
         nomClient:
           type: string
           example: "AÃ¯ssatou Ndiaye"
@@ -2170,3 +2681,488 @@ components:
           type: string
         path:
           type: string
+
+    # ============================================
+    # SCHEMAS - Admin Zones
+    # ============================================
+
+    # DTOs pour Admin Zones
+    ZoneAdminDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        nom:
+          type: string
+          example: "Zone 1"
+        description:
+          type: string
+          example: "Plateau, Ponty, Médina"
+        tarifStandard:
+          type: number
+          format: decimal
+          example: 1000.00
+        tarifExpress:
+          type: number
+          format: decimal
+          example: 1500.00
+        actif:
+          type: boolean
+          example: true
+        nombreQuartiers:
+          type: integer
+          example: 15
+        dateCreation:
+          type: string
+          format: date-time
+        dateModification:
+          type: string
+          format: date-time
+
+    ZoneDetailDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        nom:
+          type: string
+          example: "Zone 1"
+        description:
+          type: string
+          example: "Plateau, Ponty, Médina"
+        tarifStandard:
+          type: number
+          format: decimal
+          example: 1000.00
+        tarifExpress:
+          type: number
+          format: decimal
+          example: 1500.00
+        actif:
+          type: boolean
+          example: true
+        quartiers:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+                format: int64
+              nom:
+                type: string
+              commune:
+                type: string
+              actif:
+                type: boolean
+        dateCreation:
+          type: string
+          format: date-time
+        dateModification:
+          type: string
+          format: date-time
+
+    CreateZoneRequest:
+      type: object
+      required:
+        - nom
+        - tarifStandard
+        - tarifExpress
+        - actif
+      properties:
+        nom:
+          type: string
+          minLength: 3
+          maxLength: 100
+          example: "Zone 5"
+        description:
+          type: string
+          maxLength: 500
+          example: "Nouvelle zone - Keur Massar"
+        tarifStandard:
+          type: number
+          format: decimal
+          minimum: 0.01
+          example: 2000.00
+        tarifExpress:
+          type: number
+          format: decimal
+          minimum: 0.01
+          example: 3000.00
+        actif:
+          type: boolean
+          example: true
+
+    UpdateZoneRequest:
+      type: object
+      required:
+        - nom
+        - tarifStandard
+        - tarifExpress
+        - actif
+      properties:
+        nom:
+          type: string
+          minLength: 3
+          maxLength: 100
+          example: "Zone 1 - Centre ville"
+        description:
+          type: string
+          maxLength: 500
+          example: "Plateau, Ponty, Médina, HLM"
+        tarifStandard:
+          type: number
+          format: decimal
+          minimum: 0.01
+          example: 1200.00
+        tarifExpress:
+          type: number
+          format: decimal
+          minimum: 0.01
+          example: 1800.00
+        actif:
+          type: boolean
+          example: true
+
+    UpdateTarifsRequest:
+      type: object
+      required:
+        - tarifStandard
+        - tarifExpress
+      properties:
+        tarifStandard:
+          type: number
+          format: decimal
+          minimum: 0.01
+          example: 1500.00
+        tarifExpress:
+          type: number
+          format: decimal
+          minimum: 0.01
+          example: 2200.00
+
+    PageZone:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/ZoneAdminDTO'
+        page:
+          type: integer
+          example: 0
+        size:
+          type: integer
+          example: 20
+        totalElements:
+          type: integer
+          example: 4
+        totalPages:
+          type: integer
+          example: 1
+
+    AdminZonesPost201Response:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Zone créée avec succès"
+        zone:
+          $ref: '#/components/schemas/ZoneAdminDTO'
+
+    AdminZonesIdPut200Response:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Zone modifiée avec succès"
+        zone:
+          $ref: '#/components/schemas/ZoneAdminDTO'
+
+    AdminZonesIdTarifsPatch200Response:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Tarifs mis à jour avec succès"
+        zone:
+          type: object
+          properties:
+            id:
+              type: integer
+              format: int64
+            nom:
+              type: string
+            tarifStandard:
+              type: number
+              format: decimal
+            tarifExpress:
+              type: number
+              format: decimal
+
+    AdminZonesIdTogglePatch200Response:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Zone désactivée avec succès"
+        zone:
+          type: object
+          properties:
+            id:
+              type: integer
+              format: int64
+            nom:
+              type: string
+            actif:
+              type: boolean
+
+    # ============================================
+    # SCHEMAS - Profil
+    # ============================================
+    ProfilResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        nom:
+          type: string
+          example: "Diop"
+        prenom:
+          type: string
+          example: "Fatou"
+        telephone:
+          type: string
+          example: "771234567"
+        email:
+          type: string
+          example: "fatou@example.com"
+        role:
+          type: string
+          enum: [ VENDEUR, ADMIN ]
+        dateInscription:
+          type: string
+          format: date-time
+        # Champs spécifiques vendeur (null si admin)
+        nomBoutique:
+          type: string
+          example: "Fatou Fashion"
+        categorieActivite:
+          type: string
+          example: "Vêtements"
+        instagram:
+          type: string
+          example: "@fatoufashion"
+        facebook:
+          type: string
+          example: "Fatou Fashion Dakar"
+        commune:
+          type: string
+          example: "Dakar"
+        quartier:
+          type: string
+          example: "Plateau"
+        adresseComplete:
+          type: string
+          example: "Rue 10, Immeuble Seydi"
+        statut:
+          $ref: '#/components/schemas/StatutVendeur'
+        soldeEnAttente:
+          type: number
+          format: decimal
+
+    UpdateProfilRequest:
+      type: object
+      required:
+        - nom
+        - prenom
+        - email
+      properties:
+        nom:
+          type: string
+          minLength: 2
+          maxLength: 100
+          example: "Diop"
+        prenom:
+          type: string
+          minLength: 2
+          maxLength: 100
+          example: "Fatou"
+        email:
+          type: string
+          format: email
+          maxLength: 150
+          example: "fatou@example.com"
+        # Champs spécifiques vendeur (ignorés si admin)
+        nomBoutique:
+          type: string
+          maxLength: 200
+          example: "Fatou Fashion"
+        categorieActivite:
+          type: string
+          maxLength: 100
+          example: "Vêtements"
+        instagram:
+          type: string
+          maxLength: 100
+          example: "@fatoufashion"
+        facebook:
+          type: string
+          maxLength: 200
+          example: "Fatou Fashion Dakar"
+        commune:
+          type: string
+          maxLength: 100
+          example: "Dakar"
+        quartier:
+          type: string
+          maxLength: 100
+          example: "Plateau"
+        adresseComplete:
+          type: string
+          maxLength: 500
+          example: "Rue 10, Immeuble Seydi"
+
+    ChangePasswordRequest:
+      type: object
+      required:
+        - ancienPassword
+        - nouveauPassword
+      properties:
+        ancienPassword:
+          type: string
+          format: password
+          minLength: 6
+          example: "ancien123"
+        nouveauPassword:
+          type: string
+          format: password
+          minLength: 6
+          example: "nouveau456"
+
+    ProfilPut200Response:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Profil mis à jour avec succès"
+        profil:
+          $ref: '#/components/schemas/ProfilResponse'
+
+    CreateQuartierRequest:
+      type: object
+      required:
+        - nom
+        - commune
+        - zoneId
+      properties:
+        nom:
+          type: string
+          minLength: 2
+          maxLength: 100
+          example: "Sacré-Coeur 3"
+        commune:
+          type: string
+          minLength: 2
+          maxLength: 100
+          example: "Dakar"
+        zoneId:
+          type: integer
+          format: int64
+          example: 2
+        actif:
+          type: boolean
+          default: true
+
+    UpdateQuartierRequest:
+      type: object
+      required:
+        - nom
+        - commune
+        - zoneId
+      properties:
+        nom:
+          type: string
+          minLength: 2
+          maxLength: 100
+          example: "Sacré-Coeur 3"
+        commune:
+          type: string
+          minLength: 2
+          maxLength: 100
+          example: "Dakar"
+        zoneId:
+          type: integer
+          format: int64
+          example: 2
+        actif:
+          type: boolean
+
+    QuartierDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        nom:
+          type: string
+        commune:
+          type: string
+        actif:
+          type: boolean
+        zone:
+          type: object
+          properties:
+            id:
+              type: integer
+              format: int64
+            nom:
+              type: string
+
+    AdminQuartiersPost201Response:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Quartier créé avec succès"
+        quartier:
+          $ref: '#/components/schemas/QuartierDTO'
+
+    AdminQuartiersIdPut200Response:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Quartier modifié avec succès"
+        quartier:
+          $ref: '#/components/schemas/QuartierDTO'
+
+    AdminQuartiersIdDelete200Response:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Quartier supprimé avec succès"
+
+    AdminQuartiersIdTogglePatch200Response:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Quartier activé avec succès"
+        quartier:
+          type: object
+          properties:
+            id:
+              type: integer
+              format: int64
+            nom:
+              type: string
+            actif:
+              type: boolean
+

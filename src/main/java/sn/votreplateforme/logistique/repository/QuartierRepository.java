@@ -76,4 +76,9 @@ public interface QuartierRepository extends JpaRepository<Quartier, Long> {
      * @return Nombre de quartiers
      */
     long countByZone(Zone zone);
+
+    // Nouvelles méthodes pour Admin Zones
+    List<Quartier> findByZoneId(Long zoneId);
+
+    long countByZoneId(Long zoneId);
 }

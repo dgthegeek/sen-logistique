@@ -79,7 +79,7 @@ twilio:
 
 # Configuration Application
 app:
-  base-url: ${APP_BASE_URL:https://api.dioks.com}
+  base-url: ${APP_BASE_URL:https://app.dioks.com}
   tracking-url: ${TRACKING_URL:https://app.dioks.com/tracking}
   
   # Numérotation des colis

@@ -108,7 +108,7 @@ public class VendeurController implements VendeurApi {
 
         try {
             // Vérifier le statut du vendeur
-            verifierVendeurActif();
+//            verifierVendeurActif();
 
             LivraisonResponse response = livraisonService.creerLivraison(createLivraisonRequest);
 
@@ -177,7 +177,7 @@ public class VendeurController implements VendeurApi {
 
         try {
             // Vérifier le statut du vendeur
-            verifierVendeurActif();
+//            verifierVendeurActif(); commenter pour permettre a l'admin de consommer l'endpoint
 
             LivraisonDetailResponse detail = vendeurService.getDetailLivraison(id);
 
