@@ -150,15 +150,19 @@ public class VendeurService {
     public LivraisonDetailResponse getDetailLivraison(Long id) {
         log.info("=== Récupération détails livraison {} ===", id);
 
-        Vendeur vendeur = getCurrentVendeur();
+        // Vendeur vendeur = getCurrentVendeur(); // Admin va utiliser cette endpoint donc on peut pas get le vendeur comme ca
+        // on le fait manuellent
 
         Livraison livraison = livraisonRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Livraison non trouvée"));
 
+        Vendeur vendeur = vendeurRepository.findById(livraison.getVendeur().getId()).orElse(null);
+
+
         // Vérifier que la livraison appartient bien au vendeur connecté
-        if (!livraison.getVendeur().getId().equals(vendeur.getId())) {
-            throw new IllegalArgumentException("Vous n'avez pas accès à cette livraison");
-        }
+//        if (!livraison.getVendeur().getId().equals(vendeur.getId())) {
+//            throw new IllegalArgumentException("Vous n'avez pas accès à cette livraison");
+//        }
 
         // Construire la réponse détaillée
         LivraisonDetailResponse detail = new LivraisonDetailResponse();

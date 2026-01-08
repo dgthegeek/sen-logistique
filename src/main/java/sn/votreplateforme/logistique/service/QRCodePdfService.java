@@ -196,6 +196,7 @@ public class QRCodePdfService {
      * Génère une image BufferedImage du QR code
      */
     private BufferedImage generateQRCodeImage(String url) throws WriterException {
+        log.info("Génération QR code pour URL: {}", url);
         QRCodeWriter qrCodeWriter = new QRCodeWriter();
         BitMatrix bitMatrix = qrCodeWriter.encode(url, BarcodeFormat.QR_CODE, QR_CODE_SIZE, QR_CODE_SIZE);
         return MatrixToImageWriter.toBufferedImage(bitMatrix);
