@@ -55,7 +55,7 @@ public class SecurityConfig {
                 // ==================== ENDPOINTS PUBLICS ====================
                 
                 // Authentication - Accessible sans connexion
-                .requestMatchers("/auth/**").permitAll()
+                .requestMatchers("/auth/**", "/test/**").permitAll()
                 
                 // Tracking public - Accessible sans connexion
                 .requestMatchers(HttpMethod.GET, "/tracking/**").permitAll()

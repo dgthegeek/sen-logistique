@@ -56,3 +56,6 @@ scripts/
 *.pem
 *.crt
 secrets/
+
+application-dev.yml
+application.yml

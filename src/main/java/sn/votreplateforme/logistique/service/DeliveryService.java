@@ -19,11 +19,11 @@ import java.util.Map;
 /**
  * Service Delivery - Gestion de la confirmation de livraison
  *
- * ResponsabilitÃ©s :
- * - RÃ©cupÃ©rer les infos de livraison aprÃ¨s scan QR
- * - Confirmer la livraison et mettre Ã  jour le statut
- * - Enregistrer le cash collectÃ©
- * - DÃ©clencher les notifications
+ * Responsabilités :
+ * - Récupérer les infos de livraison après scan QR
+ * - Confirmer la livraison et mettre à jour le statut
+ * - Enregistrer le cash collecté
+ * - Déclencher les notifications
  */
 @Service
 @Slf4j
@@ -34,41 +34,41 @@ public class DeliveryService {
     private final NotificationService notificationService;
 
     /**
-     * RÃ©cupÃ¨re les informations de livraison pour le formulaire de confirmation
+     * Récupère les informations de livraison pour le formulaire de confirmation
      *
-     * @param numeroTracking NumÃ©ro de tracking
-     * @return DeliveryInfoResponse avec toutes les infos prÃ©-remplies
+     * @param numeroTracking Numéro de tracking
+     * @return DeliveryInfoResponse avec toutes les infos pré-remplies
      */
     @Transactional(readOnly = true)
     public DeliveryInfoResponse getDeliveryInfo(String numeroTracking) {
-        log.info("RÃ©cupÃ©ration infos delivery pour: {}", numeroTracking);
+        log.info("Récupération infos delivery pour: {}", numeroTracking);
 
         // 1. Recuperer la livraison
         Livraison livraison = livraisonRepository.findByNumeroTracking(numeroTracking)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "Colis non trouvee: " + numeroTracking
+                        "Colis non trouvée: " + numeroTracking
                 ));
 
         // 2. Verifier que le colis est au bon statut (RAMASSE)
         if (livraison.getStatut() != StatutLivraison.RAMASSE) {
             log.warn("Tentative de livraison d'un colis pas au statut RAMASSE: {} - Statut actuel: {}",
                     numeroTracking, livraison.getStatut());
-            throw new ResourceNotFoundException("Colis non trouvee: " + numeroTracking);
+            throw new ResourceNotFoundException("Colis non trouvée: " + numeroTracking);
         }
 
-        System.out.println("livraison: "+livraison.getStatut());
+        log.debug("Livraison: {}", livraison.getStatut());
 
-        // 3. Construire le DTO selon le schÃ©ma OpenAPI
+        // 3. Construire le DTO selon le schéma OpenAPI
         DeliveryInfoResponse response = new DeliveryInfoResponse();
         response.setNumeroTracking(numeroTracking);
         response.setMontantACollecter(livraison.getMontantCOD());
 
-        // Client (objet imbriquÃ©)
+        // Client (objet imbriqué)
         DeliveryInfoResponseClient client = new DeliveryInfoResponseClient();
         client.setNom(livraison.getNomClient());
         client.setTelephone(livraison.getTelephoneClient());
 
-        // Adresse complÃ¨te formatÃ©e
+        // Adresse complète formatée
         String adresseComplete = String.format("%s, %s",
                 livraison.getAdresseDestination().getQuartier(),
                 livraison.getAdresseDestination().getAdresseComplete()
@@ -77,18 +77,18 @@ public class DeliveryService {
         client.setPointRepere(livraison.getAdresseDestination().getPointRepere());
         response.setClient(client);
 
-        // Produit (objet imbriquÃ©)
+        // Produit (objet imbriqué)
         DeliveryInfoResponseProduit produit = new DeliveryInfoResponseProduit();
         produit.setDescription(livraison.getDescriptionProduit());
         produit.setFragile(livraison.getFragile());
         response.setProduit(produit);
 
-        // Vendeur (objet imbriquÃ©)
+        // Vendeur (objet imbriqué)
         DeliveryInfoResponseVendeur vendeur = new DeliveryInfoResponseVendeur();
-        vendeur.setNom(livraison.getVendeur().getPrenom()); // PrÃ©nom du vendeur
+        vendeur.setNom(livraison.getVendeur().getPrenom()); // Prénom du vendeur
         response.setVendeur(vendeur);
 
-        log.info("Infos delivery {} rÃ©cupÃ©rÃ©es - Client: {}, Montant: {} FCFA",
+        log.info("Infos delivery {} récupérées - Client: {}, Montant: {} FCFA",
                 numeroTracking,
                 livraison.getNomClient(),
                 livraison.getMontantCOD()
@@ -100,57 +100,57 @@ public class DeliveryService {
     /**
      * Confirme la livraison du colis
      *
-     * Change le statut : RAMASSE â†’ LIVREE
-     * Enregistre le cash collectÃ©
-     * Met Ã  jour les dates
+     * Change le statut : RAMASSE → LIVREE
+     * Enregistre le cash collecté
+     * Met à jour les dates
      * Envoie les notifications
      *
-     * @param numeroTracking NumÃ©ro de tracking
-     * @param request DonnÃ©es de confirmation
+     * @param numeroTracking Numéro de tracking
+     * @param request Données de confirmation
      * @return Message de confirmation
      */
     @Transactional
     public Map<String, Object> confirmerLivraison(String numeroTracking, ConfirmLivraisonRequest request) {
-        log.info("Confirmation livraison: {} - Cash collectÃ©: {} FCFA",
+        log.info("Confirmation livraison: {} - Cash collecté: {} FCFA",
                 numeroTracking,
                 request.getCashCollecte()
         );
 
-        // 1. RÃ©cupÃ©rer la livraison
+        // 1. Récupérer la livraison
         Livraison livraison = livraisonRepository.findByNumeroTracking(numeroTracking)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "Colis non trouvÃ©: " + numeroTracking
+                        "Colis non trouvé: " + numeroTracking
                 ));
 
-        // 2. VÃ©rifier le statut actuel
+        // 2. Vérifier le statut actuel
         if (livraison.getStatut() != StatutLivraison.RAMASSE) {
             throw new BusinessException(
                     String.format(
-                            "Le colis %s ne peut pas Ãªtre livrÃ©. Statut actuel: %s (attendu: RAMASSE)",
+                            "Le colis %s ne peut pas être livré. Statut actuel: %s (attendu: RAMASSE)",
                             numeroTracking,
                             livraison.getStatut()
                     )
             );
         }
 
-        // 3. VÃ©rifier que le colis a Ã©tÃ© remis
+        // 3. Vérifier que le colis a été remis
         if (!request.getColisRemis()) {
             throw new BusinessException(
-                    "Le colis doit Ãªtre marquÃ© comme remis pour confirmer la livraison"
+                    "Le colis doit être marqué comme remis pour confirmer la livraison"
             );
         }
 
-        // 4. VÃ©rifier le montant collectÃ©
+        // 4. Vérifier le montant collecté
         if (request.getCashCollecte().compareTo(livraison.getMontantCOD()) != 0) {
-            log.warn("âš ï¸ Montant collectÃ© ({}) diffÃ©rent du montant COD attendu ({}) pour {}",
+            log.warn("⚠️ Montant collecté ({}) différent du montant COD attendu ({}) pour {}",
                     request.getCashCollecte(),
                     livraison.getMontantCOD(),
                     numeroTracking
             );
-            // On accepte quand mÃªme mais on log
+            // On accepte quand même mais on log
         }
 
-        // 5. Mettre Ã  jour la livraison
+        // 5. Mettre à jour la livraison
         livraison.setStatut(StatutLivraison.LIVREE);
         livraison.setDateLivraison(LocalDateTime.now());
         livraison.setCashCollecte(request.getCashCollecte());
@@ -158,49 +158,45 @@ public class DeliveryService {
 
         livraisonRepository.save(livraison);
 
-        log.info("âœ… Livraison {} mise Ã  jour - Statut: LIVREE", numeroTracking);
+        log.info("✅ Livraison {} mise à jour - Statut: LIVREE", numeroTracking);
 
         // 6. Calculer le montant que le vendeur va recevoir
         BigDecimal montantVendeur = livraison.getMontantCOD()
                 .subtract(livraison.getFraisLivraison());
 
-        // 7. Mettre Ã  jour le solde du vendeur
+        // 7. Mettre à jour le solde du vendeur
         livraison.getVendeur().setSoldeEnAttente(
                 livraison.getVendeur().getSoldeEnAttente().add(montantVendeur)
         );
 
-        log.info("ðŸ’° Solde vendeur {} mis Ã  jour: +{} FCFA",
+        log.info("💰 Solde vendeur {} mis à jour: +{} FCFA",
                 livraison.getVendeur().getPrenom(),
                 montantVendeur
         );
 
         // 8. Envoyer les notifications
         try {
-            // Notification au vendeur
-            notificationService.envoyerNotificationVendeurLivraison(
-                    livraison.getVendeur().getTelephone(),
-                    numeroTracking,
-                    montantVendeur
-            );
+            // 1️⃣ NOTIFICATION AU VENDEUR
+            notificationService.notifierLivraison(livraison);
 
-            // Notification au client
-            notificationService.envoyerNotificationClientLivraison(
+            // 2️⃣ NOTIFICATION AU CLIENT
+            notificationService.notifierClientLivraison(
                     livraison.getTelephoneClient(),
                     numeroTracking
             );
 
-            log.info("ðŸ“± Notifications envoyÃ©es avec succÃ¨s");
+            log.info("📱 Notifications envoyées avec succès");
         } catch (Exception e) {
-            log.error("âŒ Erreur lors de l'envoi des notifications: {}", e.getMessage());
-            // On ne bloque pas si les notifications Ã©chouent
+            log.error("❌ Erreur lors de l'envoi des notifications: {}", e.getMessage());
+            // On ne bloque pas si les notifications échouent
         }
 
-        // 9. Retourner la rÃ©ponse (selon le schÃ©ma OpenAPI)
+        // 9. Retourner la réponse (selon le schéma OpenAPI)
         Map<String, Object> response = new HashMap<>();
-        response.put("message", "Livraison confirmÃ©e avec succÃ¨s");
+        response.put("message", "Livraison confirmée avec succès");
         response.put("numeroTracking", numeroTracking);
 
-        log.info("ðŸŽ‰ Livraison {} confirmÃ©e avec succÃ¨s !", numeroTracking);
+        log.info("🎉 Livraison {} confirmée avec succès !", numeroTracking);
 
         return response;
     }
