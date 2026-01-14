@@ -70,13 +70,6 @@ jwt:
   expiration: 86400000 # 24 heures en millisecondes
   refresh-expiration: 604800000 # 7 jours
 
-# Configuration Twilio (WhatsApp)
-twilio:
-  account-sid: ${TWILIO_ACCOUNT_SID:your_account_sid}
-  auth-token: ${TWILIO_AUTH_TOKEN:your_auth_token}
-  whatsapp-from: ${TWILIO_WHATSAPP_FROM:whatsapp:+14155238886}
-  enabled: ${TWILIO_ENABLED:false}
-
 # Configuration Application
 app:
   base-url: ${APP_BASE_URL:https://app.dioks.com}
@@ -157,9 +150,6 @@ app:
   base-url: http://localhost:8080
   tracking-url: http://localhost:4200/tracking
 
-twilio:
-  enabled: false # Désactivé en dev pour éviter les frais
-
 ---
 # Profil Test
 spring:
@@ -186,8 +176,18 @@ logging:
     root: WARN
     sn.votreplateforme: DEBUG
 
+# Configuration Twilio WhatsApp
+
+# Configuration Twilio WhatsApp
+# Configuration Twilio WhatsApp
 twilio:
-  enabled: false
+  enabled: true
+  account-sid: AC4dc6a916fcac4bd65bb132b70477d922
+  auth-token: 7237a04ea01a490138f2ce7250fb0d4f
+  whatsapp:
+    from: whatsapp:+14155238886
+  admin:
+    phone: +212676336628
 
 ---
 # Profil Production
@@ -213,6 +213,3 @@ server:
   error:
     include-stacktrace: never
     include-exception: false
-
-twilio:
-  enabled: true

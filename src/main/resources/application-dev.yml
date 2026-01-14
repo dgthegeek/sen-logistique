@@ -33,6 +33,12 @@ app:
     allow-credentials: true
     max-age: 3600
 
-# Twilio (désactivé en local)
+# Configuration Twilio WhatsApp
 twilio:
-  enabled: false
+  enabled: true
+  account-sid: AC4dc6a916fcac4bd65bb132b70477d922
+  auth-token: 7237a04ea01a490138f2ce7250fb0d4f
+  whatsapp:
+    from: whatsapp:+14155238886
+  admin:
+    phone: +212676336628

@@ -46,6 +46,7 @@ public class LivraisonService {
     private final TarifCalculator tarifCalculator;
     private final TrackingNumberGenerator trackingNumberGenerator;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     /**
      * Crée une nouvelle livraison
@@ -91,27 +92,28 @@ public class LivraisonService {
         // 3. Trouver la zone à partir du quartier
         Zone zone = zoneService.findZoneByQuartier(request.getQuartier(), request.getCommune());
 
-        // 3. Calculer le tarif de livraison
-        // Convertir le DTO TypeUrgence en Entity TypeUrgence
+        // 4. Calculer le tarif de livraison
         TypeUrgence urgenceEntity = (request.getUrgence() != null)
                 ? TypeUrgence.valueOf(request.getUrgence().name())
                 : TypeUrgence.NORMAL;
-        if (request.getPoids() == null) {request.setPoids(3d); }
+        if (request.getPoids() == null) {
+            request.setPoids(3d);
+        }
 
         BigDecimal fraisLivraison = tarifCalculator.calculer(zone, urgenceEntity, request.getPoids());
 
         log.debug("Tarif calculé: {} FCFA (urgence: {}, poids: {} kg)",
                 fraisLivraison, urgenceEntity, request.getPoids());
 
-        // 4. Générer le numéro de tracking
+        // 5. Générer le numéro de tracking
         String numeroTracking = trackingNumberGenerator.generate();
 
         log.debug("Numéro de tracking généré: {}", numeroTracking);
 
-        // 5. Générer l'URL du QR code
+        // 6. Générer l'URL du QR code
         String qrCodeUrl = qrCodeService.generateQRCodeUrl(numeroTracking);
 
-        // 6. Créer l'adresse de destination
+        // 7. Créer l'adresse de destination
         Adresse adresse = new Adresse();
         adresse.setCommune(request.getCommune());
         adresse.setQuartier(request.getQuartier());
@@ -119,7 +121,7 @@ public class LivraisonService {
         adresse.setPointRepere(request.getPointRepere());
         adresse.setZone(zone);
 
-        // 7. Créer la livraison
+        // 8. Créer la livraison
         Livraison livraison = new Livraison();
         livraison.setNumeroTracking(numeroTracking);
         livraison.setQrCodeUrl(qrCodeUrl);
@@ -150,16 +152,126 @@ public class LivraisonService {
 
         livraison.setNotesPourLivreur(request.getNotesPourLivreur());
 
-        // 8. Sauvegarder
+        // 9. Sauvegarder
         livraison = livraisonRepository.save(livraison);
 
         log.info("✅ Livraison créée avec succès: {} (ID: {})", numeroTracking, livraison.getId());
 
-        // 9. Calculer le montant que le vendeur recevra
+        // 10. ENVOYER LES 3 NOTIFICATIONS
+        envoyerNotificationsCreation(livraison);
+
+        // 11. Calculer le montant que le vendeur recevra
         BigDecimal montantARecevoir = request.getMontantCOD().subtract(fraisLivraison);
 
-        // 10. Créer la réponse
+        // 12. Créer la réponse
         return buildLivraisonResponse(livraison, montantARecevoir);
+    }
+
+    /**
+     * Envoie les 3 notifications après création d'une livraison
+     * 1. Notification au VENDEUR
+     * 2. Notification au CLIENT
+     * 3. Notification à L'ADMIN
+     */
+    private void envoyerNotificationsCreation(Livraison livraison) {
+        try {
+            // 1️⃣ NOTIFICATION AU VENDEUR
+            String messageVendeur = String.format(
+                    "Nouvelle livraison créée !\n\n" +
+                            "📦 Colis : #%s\n" +
+                            "📍 Destination : %s, %s\n" +
+                            "👤 Client : %s (%s)\n" +
+                            "💰 Montant COD : %s FCFA\n" +
+                            "📊 Frais livraison : %s FCFA\n" +
+                            "💵 Vous recevrez : %s FCFA\n\n" +
+                            "Préparez le colis pour le ramassage.\n" +
+                            "Merci ! 💚",
+                    livraison.getNumeroTracking(),
+                    livraison.getAdresseDestination().getQuartier().toUpperCase(),
+                    livraison.getAdresseDestination().getCommune().toUpperCase(),
+                    livraison.getNomClient().toUpperCase(),
+                    livraison.getTelephoneClient(),
+                    formatMontant(livraison.getMontantCOD()),
+                    formatMontant(livraison.getFraisLivraison()),
+                    formatMontant(livraison.getMontantCOD().subtract(livraison.getFraisLivraison()))
+            );
+
+            notificationService.envoyerWhatsApp(
+                    livraison.getVendeur().getTelephone(),
+                    messageVendeur
+            );
+            log.info("📱 Notification vendeur envoyée : {}", livraison.getVendeur().getTelephone());
+
+            // 2️⃣ NOTIFICATION AU CLIENT
+            String messageClient = String.format(
+                    "📦 Votre commande de %s a été prise en charge par Dioks !\n\n" +
+                            "Bonjour %s,\n\n" +
+                            "💰 Montant à payer : %s FCFA\n" +
+                            "🔗 Suivez votre colis :\n" +
+                            "https://app.dioks.com/tracking/%s\n\n" +
+                            "Vous serez notifié quand le livreur sera en route.\n" +
+                            "Merci de faire confiance à Dioks ! 😊",
+                    livraison.getVendeur().getNomBoutique().toUpperCase(),
+                    livraison.getNomClient().toUpperCase(),
+                    formatMontant(livraison.getMontantCOD()),
+                    livraison.getNumeroTracking()
+            );
+
+            notificationService.envoyerWhatsApp(
+                    livraison.getTelephoneClient(),
+                    messageClient
+            );
+            log.info("📱 Notification client envoyée : {}", livraison.getTelephoneClient());
+
+            // 3️⃣ NOTIFICATION À L'ADMIN
+            String messageAdmin = String.format(
+                    "Nouveau ramassage à effectuer\n\n" +
+                            "Colis : #%s\n" +
+                            "🏪 Vendeur : %s %s\n" +
+                            "📱 Tél vendeur : %s\n\n" +
+                            "📍 Zone : %s\n" +
+                            "🎯 Destination : %s, %s\n" +
+                            "👤 Client : %s (%s)\n\n" +
+                            "💰 COD : %s FCFA\n" +
+                            "📊 Frais : %s FCFA\n" +
+                            "⚡ Urgence : %s\n" +
+                            "%s\n" +
+                            "À ramasser dès que possible !",
+                    livraison.getNumeroTracking(),
+                    livraison.getVendeur().getPrenom().toUpperCase(),
+                    livraison.getVendeur().getNom().toUpperCase(),
+                    livraison.getVendeur().getTelephone(),
+                    livraison.getAdresseDestination().getZone().getNom().toUpperCase(),
+                    livraison.getAdresseDestination().getQuartier().toUpperCase(),
+                    livraison.getAdresseDestination().getCommune().toUpperCase(),
+                    livraison.getNomClient().toUpperCase(),
+                    livraison.getTelephoneClient(),
+                    formatMontant(livraison.getMontantCOD()),
+                    formatMontant(livraison.getFraisLivraison()),
+                    livraison.getUrgence(),
+                    livraison.getFragile() ? "⚠️ FRAGILE" : ""
+            );
+
+            notificationService.envoyerNotificationAdmin(
+                    "Nouveau ramassage",
+                    messageAdmin
+            );
+            log.info("📱 Notification admin envoyée");
+
+        } catch (Exception e) {
+            // Ne pas bloquer la création de livraison si notifications échouent
+            log.error("❌ Erreur lors de l'envoi des notifications : {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Formate un montant BigDecimal en FCFA avec séparateurs
+     */
+    private String formatMontant(BigDecimal montant) {
+        if (montant == null) {
+            return "0";
+        }
+        return String.format("%,d", montant.longValue()).replace(',', ' ');
     }
 
     /**
