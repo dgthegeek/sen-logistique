@@ -13,7 +13,10 @@ import sn.votreplateforme.logistique.entity.Vendeur;
 import sn.votreplateforme.logistique.exception.ForbiddenException;
 import sn.votreplateforme.logistique.repository.VendeurRepository;
 import sn.votreplateforme.logistique.service.LivraisonService;
+import sn.votreplateforme.logistique.service.StockService;
 import sn.votreplateforme.logistique.service.VendeurService;
+
+import java.util.List;
 
 /**
  * Controller Vendeur
@@ -35,6 +38,16 @@ public class VendeurController implements VendeurApi {
     private final LivraisonService livraisonService;
     private final VendeurService vendeurService;
     private final VendeurRepository vendeurRepository;
+    private final StockService stockService;
+
+    /**
+     * GET /vendeur/produits
+     * Produits (stock) du partenaire connecté.
+     */
+    @Override
+    public ResponseEntity<List<ProduitResponse>> mesProduits() {
+        return ResponseEntity.ok(stockService.getProduitsVendeurConnecte());
+    }
 
     /**
      * GET /vendeur/dashboard

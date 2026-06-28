@@ -51,6 +51,20 @@ public class QRCodeService {
     }
     
     /**
+     * Génère l'URL du QR code d'un produit (consultation par code).
+     *
+     * Format: https://track.votreplateforme.sn/produits/{code}
+     *
+     * @param code Code unique du produit (ex: DKS-00001)
+     * @return URL encodée dans le QR code du produit
+     */
+    public String generateProduitQrUrl(String code) {
+        String url = baseUrl + "/produits/" + code;
+        log.debug("URL QR produit générée: {}", url);
+        return url;
+    }
+
+    /**
      * Génère une image QR code (pour une implémentation future)
      * 
      * Note: Pour l'instant, on stocke juste l'URL.
