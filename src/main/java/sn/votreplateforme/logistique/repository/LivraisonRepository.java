@@ -63,6 +63,21 @@ public interface LivraisonRepository extends JpaRepository<Livraison, Long> {
 
     List<Livraison> findByStatutInOrderByDateRamassageAsc(List<StatutLivraison> statuts);
 
+    // ==================== CLOSING & DISPATCH ====================
+
+    /** File du closeur : commandes à traiter, plus anciennes d'abord. */
+    List<Livraison> findByStatutInOrderByDateCreationAsc(List<StatutLivraison> statuts);
+
+    /** "Mes livraisons" d'un livreur, filtrées par statuts. */
+    List<Livraison> findByLivreur_IdAndStatutInOrderByDateAssignationDesc(
+            Long livreurId, List<StatutLivraison> statuts);
+
+    /** Toutes les livraisons d'un livreur. */
+    List<Livraison> findByLivreur_IdOrderByDateAssignationDesc(Long livreurId);
+
+    /** Nombre de livraisons en cours pour un livreur. */
+    long countByLivreur_IdAndStatutIn(Long livreurId, List<StatutLivraison> statuts);
+
     // ==================== RECHERCHES PAR DATES ====================
 
     List<Livraison> findByDateCreationAfter(LocalDateTime date);

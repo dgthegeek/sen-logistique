@@ -127,7 +127,7 @@ public class Livraison {
      */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
-    private StatutLivraison statut = StatutLivraison.EN_ATTENTE_RAMASSAGE;
+    private StatutLivraison statut = StatutLivraison.NOUVELLE;
 
     /**
      * Date de création de la livraison (auto-générée)

@@ -87,9 +87,19 @@ public class SecurityConfig {
 
                 // Endpoints vendeur - Nécessite rôle VENDEUR
                 .requestMatchers("/vendeur/**").hasRole("VENDEUR")
-                
+
+                // ==================== ENDPOINTS CLOSEUR ====================
+
+                // Module Closing - Closeur (l'admin garde un droit de supervision)
+                .requestMatchers("/closeur/**").hasAnyRole("CLOSEUR", "ADMIN")
+
+                // ==================== ENDPOINTS LIVREUR ====================
+
+                // Interface livreur - chaque livreur ne voit que ses livraisons
+                .requestMatchers("/livreur/**").hasRole("LIVREUR")
+
                 // ==================== ENDPOINTS ADMIN ====================
-                
+
                 // Endpoints admin - Nécessite rôle ADMIN
                 .requestMatchers("/admin/**").hasRole("ADMIN")
                 

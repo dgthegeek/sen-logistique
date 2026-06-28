@@ -141,8 +141,8 @@ public class LivraisonService {
         livraison.setMontantCOD(request.getMontantCOD());
         livraison.setFraisLivraison(fraisLivraison);
 
-        // Statut et options
-        livraison.setStatut(StatutLivraison.EN_ATTENTE_RAMASSAGE);
+        // Statut et options - nouveau cycle Closing : la commande entre en file closeur
+        livraison.setStatut(StatutLivraison.NOUVELLE);
         livraison.setUrgence(urgenceEntity);
 
         // Convertir CreneauSouhaiteEnum en String

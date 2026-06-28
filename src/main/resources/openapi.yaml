@@ -42,6 +42,14 @@ tags:
     description: Suivi public des colis
   - name: Zones
     description: Gestion des zones et quartiers
+  - name: Closeur
+    description: Module Closing - confirmation des commandes par le closeur/assistante
+  - name: Admin - Dispatch
+    description: Attribution des commandes prêtes aux livreurs
+  - name: Admin - Equipe
+    description: Gestion des comptes closeurs et livreurs
+  - name: Livreur
+    description: Interface livreur - mes livraisons assignées
 
 security:
   - bearerAuth: []
@@ -1780,6 +1788,483 @@ paths:
           $ref: '#/components/responses/ForbiddenError'
       security:
         - bearerAuth: [ ]
+
+  # ============================================
+  # CLOSEUR - Module Closing
+  # ============================================
+  /closeur/commandes:
+    get:
+      tags:
+        - Closeur
+      operationId: closeurCommandesGet
+      summary: Commandes à traiter par le closeur
+      description: Liste les commandes Nouvelle / A appeler / Confirmée (file du closeur)
+      parameters:
+        - name: statut
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/StatutLivraison'
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: Liste des commandes du closeur
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CommandeCloseur'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - bearerAuth: [ ]
+
+  /closeur/commandes/{id}/appeler:
+    post:
+      tags:
+        - Closeur
+      operationId: closeurAppeler
+      summary: Prendre la commande en charge pour appel (Nouvelle -> A appeler)
+      parameters:
+        - $ref: '#/components/parameters/LivraisonIdParam'
+      responses:
+        '200':
+          description: Commande passée à "A appeler"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandeCloseur'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+      security:
+        - bearerAuth: [ ]
+
+  /closeur/commandes/{id}/confirmer:
+    post:
+      tags:
+        - Closeur
+      operationId: closeurConfirmer
+      summary: Confirmer la commande après accord du client (-> Confirmée)
+      parameters:
+        - $ref: '#/components/parameters/LivraisonIdParam'
+      responses:
+        '200':
+          description: Commande confirmée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandeCloseur'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+      security:
+        - bearerAuth: [ ]
+
+  /closeur/commandes/{id}/prete-a-livrer:
+    post:
+      tags:
+        - Closeur
+      operationId: closeurPreteALivrer
+      summary: Rendre la commande disponible pour le dispatch (-> Prête à livrer)
+      parameters:
+        - $ref: '#/components/parameters/LivraisonIdParam'
+      responses:
+        '200':
+          description: Commande prête à livrer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandeCloseur'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+      security:
+        - bearerAuth: [ ]
+
+  /closeur/commandes/{id}/reporter:
+    post:
+      tags:
+        - Closeur
+      operationId: closeurReporter
+      summary: Reporter la commande (le client demande un rappel plus tard)
+      parameters:
+        - $ref: '#/components/parameters/LivraisonIdParam'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommentaireRequest'
+      responses:
+        '200':
+          description: Commande reportée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandeCloseur'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+      security:
+        - bearerAuth: [ ]
+
+  /closeur/commandes/{id}/annuler:
+    post:
+      tags:
+        - Closeur
+      operationId: closeurAnnuler
+      summary: Annuler la commande (-> Annulée)
+      parameters:
+        - $ref: '#/components/parameters/LivraisonIdParam'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommentaireRequest'
+      responses:
+        '200':
+          description: Commande annulée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandeCloseur'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+      security:
+        - bearerAuth: [ ]
+
+  # ============================================
+  # ADMIN - DISPATCH
+  # ============================================
+  /admin/dispatch/pretes:
+    get:
+      tags:
+        - Admin - Dispatch
+      operationId: dispatchPretes
+      summary: Commandes prêtes à livrer (à assigner)
+      description: Liste les commandes au statut PRETE_A_LIVRER pour attribution à un livreur
+      responses:
+        '200':
+          description: Commandes prêtes à livrer
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CommandeDispatch'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - bearerAuth: [ ]
+
+  /admin/dispatch/assigner:
+    post:
+      tags:
+        - Admin - Dispatch
+      operationId: dispatchAssigner
+      summary: Assigner des commandes à un livreur
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignerLivreurRequest'
+      responses:
+        '200':
+          description: Commandes assignées
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "3 commande(s) assignée(s) à Modou Fall"
+                  nombreAssignees:
+                    type: integer
+                    example: 3
+        '400':
+          description: Requête invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - bearerAuth: [ ]
+
+  # ============================================
+  # ADMIN - EQUIPE (closeurs & livreurs)
+  # ============================================
+  /admin/closeurs:
+    get:
+      tags:
+        - Admin - Equipe
+      operationId: listCloseurs
+      summary: Lister les closeurs
+      responses:
+        '200':
+          description: Liste des closeurs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MembreResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - bearerAuth: [ ]
+    post:
+      tags:
+        - Admin - Equipe
+      operationId: createCloseur
+      summary: Créer un compte closeur
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMembreRequest'
+      responses:
+        '201':
+          description: Closeur créé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembreResponse'
+        '400':
+          description: Requête invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - bearerAuth: [ ]
+
+  /admin/livreurs:
+    get:
+      tags:
+        - Admin - Equipe
+      operationId: listLivreurs
+      summary: Lister les livreurs
+      responses:
+        '200':
+          description: Liste des livreurs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LivreurResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - bearerAuth: [ ]
+    post:
+      tags:
+        - Admin - Equipe
+      operationId: createLivreur
+      summary: Créer un compte livreur
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMembreRequest'
+      responses:
+        '201':
+          description: Livreur créé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LivreurResponse'
+        '400':
+          description: Requête invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - bearerAuth: [ ]
+
+  # ============================================
+  # LIVREUR - Mes livraisons
+  # ============================================
+  /livreur/mes-livraisons:
+    get:
+      tags:
+        - Livreur
+      operationId: mesLivraisons
+      summary: Mes livraisons assignées
+      description: Le livreur connecté ne voit que ses propres livraisons (Assignée / En livraison)
+      parameters:
+        - name: statut
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/StatutLivraison'
+      responses:
+        '200':
+          description: Livraisons du livreur connecté
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CommandeLivreur'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - bearerAuth: [ ]
+
+  /livreur/livraisons/{id}/commencer:
+    post:
+      tags:
+        - Livreur
+      operationId: livreurCommencer
+      summary: Commencer la livraison (-> En livraison)
+      parameters:
+        - $ref: '#/components/parameters/LivraisonIdParam'
+      responses:
+        '200':
+          description: Livraison démarrée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandeLivreur'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+      security:
+        - bearerAuth: [ ]
+
+  /livreur/livraisons/{id}/livrer:
+    post:
+      tags:
+        - Livreur
+      operationId: livreurLivrer
+      summary: Marquer la livraison comme livrée (-> Livrée)
+      parameters:
+        - $ref: '#/components/parameters/LivraisonIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LivrerRequest'
+      responses:
+        '200':
+          description: Livraison effectuée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandeLivreur'
+        '400':
+          description: Requête invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+      security:
+        - bearerAuth: [ ]
+
+  /livreur/livraisons/{id}/echec:
+    post:
+      tags:
+        - Livreur
+      operationId: livreurEchec
+      summary: Marquer un échec de livraison avec motif (-> Échec)
+      parameters:
+        - $ref: '#/components/parameters/LivraisonIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EchecRequest'
+      responses:
+        '200':
+          description: Échec enregistré
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandeLivreur'
+        '400':
+          description: Requête invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+      security:
+        - bearerAuth: [ ]
+
 # ============================================
 # COMPONENTS
 # ============================================
@@ -1804,6 +2289,23 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
+
+    NotFoundError:
+      description: Ressource non trouvée
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  parameters:
+    LivraisonIdParam:
+      name: id
+      in: path
+      required: true
+      description: Identifiant de la livraison / commande
+      schema:
+        type: integer
+        format: int64
 
   schemas:
     # ============================================
@@ -2684,6 +3186,197 @@ components:
         - ACTIF: Vendeur valide, peut utiliser la plateforme
         - SUSPENDU: Temporairement desactive (peut etre reaactive)
         - BLOQUE: Definitivement bloque (fraude, etc.)
+
+    # ============================================
+    # CLOSING & DISPATCH SCHEMAS
+    # ============================================
+    CommandeCloseur:
+      type: object
+      description: Commande vue par le closeur
+      properties:
+        id:
+          type: integer
+          format: int64
+        numeroTracking:
+          type: string
+        statut:
+          $ref: '#/components/schemas/StatutLivraison'
+        nomClient:
+          type: string
+        telephoneClient:
+          type: string
+        adresse:
+          type: string
+        zone:
+          type: string
+        produit:
+          type: string
+        montantCOD:
+          type: number
+          format: decimal
+        dateCreation:
+          type: string
+          format: date-time
+
+    CommandeDispatch:
+      type: object
+      description: Commande prête à livrer, vue par l'admin pour assignation
+      properties:
+        id:
+          type: integer
+          format: int64
+        numeroTracking:
+          type: string
+        nomClient:
+          type: string
+        telephoneClient:
+          type: string
+        adresse:
+          type: string
+        zone:
+          type: string
+        produit:
+          type: string
+        montantCOD:
+          type: number
+          format: decimal
+
+    CommandeLivreur:
+      type: object
+      description: Livraison vue par le livreur (Mes livraisons)
+      properties:
+        id:
+          type: integer
+          format: int64
+        numeroTracking:
+          type: string
+        statut:
+          $ref: '#/components/schemas/StatutLivraison'
+        nomClient:
+          type: string
+        telephoneClient:
+          type: string
+        adresse:
+          type: string
+        pointRepere:
+          type: string
+        zone:
+          type: string
+        produit:
+          type: string
+        montantAEncaisser:
+          type: number
+          format: decimal
+
+    MembreResponse:
+      type: object
+      description: Compte d'un membre de l'équipe (closeur ou livreur)
+      properties:
+        id:
+          type: integer
+          format: int64
+        nom:
+          type: string
+        prenom:
+          type: string
+        telephone:
+          type: string
+        email:
+          type: string
+        role:
+          $ref: '#/components/schemas/UserRole'
+        actif:
+          type: boolean
+
+    LivreurResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        nom:
+          type: string
+        prenom:
+          type: string
+        telephone:
+          type: string
+        email:
+          type: string
+        zonePreferee:
+          type: string
+        actif:
+          type: boolean
+        nombreLivraisonsEnCours:
+          type: integer
+          description: Nombre de livraisons Assignée + En livraison en cours
+
+    CreateMembreRequest:
+      type: object
+      required:
+        - nom
+        - prenom
+        - telephone
+        - password
+      properties:
+        nom:
+          type: string
+        prenom:
+          type: string
+        telephone:
+          type: string
+          example: "771234567"
+        email:
+          type: string
+        password:
+          type: string
+          minLength: 6
+        zonePreferee:
+          type: string
+          description: Optionnel - uniquement pour les livreurs
+
+    AssignerLivreurRequest:
+      type: object
+      required:
+        - livraisonIds
+        - livreurId
+      properties:
+        livraisonIds:
+          type: array
+          items:
+            type: integer
+            format: int64
+          example: [1, 2, 3]
+        livreurId:
+          type: integer
+          format: int64
+
+    CommentaireRequest:
+      type: object
+      properties:
+        commentaire:
+          type: string
+
+    LivrerRequest:
+      type: object
+      required:
+        - cashCollecte
+      properties:
+        cashCollecte:
+          type: number
+          format: decimal
+          description: Montant réellement encaissé auprès du client
+        commentaire:
+          type: string
+
+    EchecRequest:
+      type: object
+      required:
+        - motif
+      properties:
+        motif:
+          $ref: '#/components/schemas/MotifEchec'
+        commentaire:
+          type: string
 
     # ============================================
     # ERROR SCHEMA
