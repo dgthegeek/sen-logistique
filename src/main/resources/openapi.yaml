@@ -50,6 +50,8 @@ tags:
     description: Gestion des comptes closeurs et livreurs
   - name: Livreur
     description: Interface livreur - mes livraisons assignées
+  - name: Admin - Stats
+    description: Tableau de bord et statistiques (commandes, livreurs, zones)
 
 security:
   - bearerAuth: []
@@ -2265,6 +2267,29 @@ paths:
       security:
         - bearerAuth: [ ]
 
+  # ============================================
+  # ADMIN - STATS / DASHBOARD
+  # ============================================
+  /admin/stats/dashboard:
+    get:
+      tags:
+        - Admin - Stats
+      operationId: statsDashboard
+      summary: Tableau de bord (commandes, livreurs, zones)
+      responses:
+        '200':
+          description: Statistiques du tableau de bord
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardStats'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - bearerAuth: [ ]
+
 # ============================================
 # COMPONENTS
 # ============================================
@@ -3377,6 +3402,84 @@ components:
           $ref: '#/components/schemas/MotifEchec'
         commentaire:
           type: string
+
+    # ============================================
+    # STATS / DASHBOARD SCHEMAS
+    # ============================================
+    DashboardStats:
+      type: object
+      properties:
+        commandes:
+          $ref: '#/components/schemas/CommandesParStatut'
+        tempsMoyenLivraisonMinutes:
+          type: integer
+          description: Temps moyen entre assignation et livraison (minutes)
+        livreurs:
+          type: array
+          items:
+            $ref: '#/components/schemas/LivreurStats'
+        zones:
+          type: array
+          items:
+            $ref: '#/components/schemas/ZoneStats'
+
+    CommandesParStatut:
+      type: object
+      properties:
+        nouvelles:
+          type: integer
+        aAppeler:
+          type: integer
+        confirmees:
+          type: integer
+        pretesALivrer:
+          type: integer
+        assignees:
+          type: integer
+        enLivraison:
+          type: integer
+        livrees:
+          type: integer
+        echecs:
+          type: integer
+
+    LivreurStats:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        nom:
+          type: string
+        prenom:
+          type: string
+        livrees:
+          type: integer
+        enCours:
+          type: integer
+        echecs:
+          type: integer
+        tauxReussite:
+          type: number
+          format: double
+          description: Pourcentage de réussite (0-100)
+        tempsMoyenMinutes:
+          type: integer
+
+    ZoneStats:
+      type: object
+      properties:
+        zone:
+          type: string
+        nombreLivraisons:
+          type: integer
+        chiffreAffaires:
+          type: number
+          format: decimal
+        tauxEchec:
+          type: number
+          format: double
+          description: Pourcentage d'échec (0-100)
 
     # ============================================
     # ERROR SCHEMA

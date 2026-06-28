@@ -78,6 +78,23 @@ public interface LivraisonRepository extends JpaRepository<Livraison, Long> {
     /** Nombre de livraisons en cours pour un livreur. */
     long countByLivreur_IdAndStatutIn(Long livreurId, List<StatutLivraison> statuts);
 
+    // ==================== STATS / DASHBOARD ====================
+
+    long countByLivreur_IdAndStatut(Long livreurId, StatutLivraison statut);
+
+    List<Livraison> findByLivreur_IdAndStatut(Long livreurId, StatutLivraison statut);
+
+    /**
+     * Agrégat par zone : [nomZone, nbLivraisons, chiffreAffaires (LIVREE), nbEchecs].
+     * Les échecs couvrent le nouveau statut ECHEC et les anciens (dormant).
+     */
+    @Query("SELECT z.nom, COUNT(l), " +
+            "COALESCE(SUM(CASE WHEN l.statut = 'LIVREE' THEN l.montantCOD ELSE 0 END), 0), " +
+            "SUM(CASE WHEN l.statut IN ('ECHEC','ECHEC_ABSENT','ECHEC_REFUSE') THEN 1 ELSE 0 END) " +
+            "FROM Livraison l JOIN l.adresseDestination.zone z " +
+            "GROUP BY z.nom ORDER BY COUNT(l) DESC")
+    List<Object[]> statsParZone();
+
     // ==================== RECHERCHES PAR DATES ====================
 
     List<Livraison> findByDateCreationAfter(LocalDateTime date);
