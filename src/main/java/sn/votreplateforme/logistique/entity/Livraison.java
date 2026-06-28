@@ -173,6 +173,33 @@ public class Livraison {
     @Column(length = 500)
     private String notesPourLivreur;
 
+    // ==================== CLOSING & DISPATCH ====================
+
+    /**
+     * Livreur assigné à cette livraison (module Dispatch).
+     * Null tant que la commande n'a pas été assignée par l'admin.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "livreur_id")
+    private Livreur livreur;
+
+    /**
+     * Date de confirmation par le closeur (passage à CONFIRMEE).
+     */
+    private LocalDateTime dateConfirmation;
+
+    /**
+     * Date d'assignation à un livreur (passage à ASSIGNEE).
+     */
+    private LocalDateTime dateAssignation;
+
+    /**
+     * Motif d'échec, obligatoire lorsque le statut passe à ECHEC.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "motif_echec", length = 30)
+    private MotifEchec motifEchec;
+
     // ==================== APRÈS LIVRAISON ====================
 
     /**
@@ -209,6 +236,7 @@ public class Livraison {
      */
     public boolean estTerminee() {
         return statut == StatutLivraison.LIVREE
+            || statut == StatutLivraison.ECHEC
             || statut == StatutLivraison.ECHEC_ABSENT
             || statut == StatutLivraison.ECHEC_REFUSE
             || statut == StatutLivraison.ANNULEE;
@@ -244,6 +272,64 @@ public class Livraison {
         this.statut = StatutLivraison.LIVREE;
         this.dateLivraison = LocalDateTime.now();
         this.cashCollecte = cashCollecte;
+        this.commentaireLivraison = commentaire;
+    }
+
+    // ==================== TRANSITIONS CLOSING & DISPATCH ====================
+
+    /**
+     * Le closeur prend la commande en charge pour appel (NOUVELLE -> A_APPELER).
+     */
+    public void marquerAAppeler() {
+        this.statut = StatutLivraison.A_APPELER;
+    }
+
+    /**
+     * Le closeur confirme la commande après accord du client (-> CONFIRMEE).
+     */
+    public void marquerConfirmee() {
+        this.statut = StatutLivraison.CONFIRMEE;
+        this.dateConfirmation = LocalDateTime.now();
+    }
+
+    /**
+     * La commande confirmée devient disponible pour le dispatch (-> PRETE_A_LIVRER).
+     */
+    public void marquerPreteALivrer() {
+        this.statut = StatutLivraison.PRETE_A_LIVRER;
+    }
+
+    /**
+     * L'admin assigne la commande à un livreur (-> ASSIGNEE).
+     */
+    public void assignerLivreur(Livreur livreur) {
+        this.livreur = livreur;
+        this.statut = StatutLivraison.ASSIGNEE;
+        this.dateAssignation = LocalDateTime.now();
+    }
+
+    /**
+     * Le livreur démarre la livraison (-> EN_LIVRAISON).
+     */
+    public void marquerEnLivraison() {
+        this.statut = StatutLivraison.EN_LIVRAISON;
+        this.dateEnRoute = LocalDateTime.now();
+    }
+
+    /**
+     * Échec de livraison avec motif obligatoire (-> ECHEC).
+     */
+    public void marquerEchec(MotifEchec motif, String commentaire) {
+        this.statut = StatutLivraison.ECHEC;
+        this.motifEchec = motif;
+        this.commentaireLivraison = commentaire;
+    }
+
+    /**
+     * Annule la commande (-> ANNULEE).
+     */
+    public void annuler(String commentaire) {
+        this.statut = StatutLivraison.ANNULEE;
         this.commentaireLivraison = commentaire;
     }
 }

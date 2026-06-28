@@ -2632,17 +2632,38 @@ components:
       enum:
         - VENDEUR
         - ADMIN
+        - CLOSEUR
+        - LIVREUR
 
     StatutLivraison:
       type: string
       enum:
+        # Nouveau cycle (Closing + Dispatch)
+        - NOUVELLE
+        - A_APPELER
+        - CONFIRMEE
+        - PRETE_A_LIVRER
+        - ASSIGNEE
+        - EN_LIVRAISON
+        - LIVREE
+        - ECHEC
+        - ANNULEE
+        # Ancien cycle (module ramassage - dormant, conservé pour l'historique)
         - EN_ATTENTE_RAMASSAGE
         - RAMASSE
         - EN_ROUTE
-        - LIVREE
         - ECHEC_ABSENT
         - ECHEC_REFUSE
-        - ANNULEE
+
+    MotifEchec:
+      type: string
+      description: Motif obligatoire lorsqu'une livraison passe au statut ECHEC.
+      enum:
+        - TELEPHONE_INJOIGNABLE
+        - CLIENT_ABSENT
+        - ADRESSE_INCORRECTE
+        - REFUS_CLIENT
+        - REPORT_CLIENT
 
     TypeUrgence:
       type: string
