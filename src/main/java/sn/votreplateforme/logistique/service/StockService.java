@@ -51,7 +51,9 @@ public class StockService {
         Pageable pageable = PageRequest.of(pageNumber, pageSize);
 
         String s = (search != null && !search.isBlank()) ? search.trim() : null;
-        Page<Produit> produits = produitRepository.rechercher(s, pageable);
+        Page<Produit> produits = (s == null)
+                ? produitRepository.findAllByOrderByDateCreationDesc(pageable)
+                : produitRepository.rechercher(s, pageable);
 
         PageProduit response = new PageProduit();
         response.setContent(produits.getContent().stream().map(this::map).collect(Collectors.toList()));
