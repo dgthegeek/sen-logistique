@@ -9,6 +9,7 @@ import sn.votreplateforme.logistique.api.AdminEquipeApi;
 import sn.votreplateforme.logistique.dto.CreateMembreRequest;
 import sn.votreplateforme.logistique.dto.LivreurResponse;
 import sn.votreplateforme.logistique.dto.MembreResponse;
+import sn.votreplateforme.logistique.dto.UpdateMembreRequest;
 import sn.votreplateforme.logistique.service.EquipeService;
 
 import java.util.List;
@@ -41,5 +42,15 @@ public class AdminEquipeController implements AdminEquipeApi {
     @Override
     public ResponseEntity<List<LivreurResponse>> listLivreurs() {
         return ResponseEntity.ok(equipeService.listLivreurs());
+    }
+
+    @Override
+    public ResponseEntity<MembreResponse> updateCloseur(Long id, UpdateMembreRequest updateMembreRequest) {
+        return ResponseEntity.ok(equipeService.updateCloseur(id, updateMembreRequest));
+    }
+
+    @Override
+    public ResponseEntity<LivreurResponse> updateLivreur(Long id, UpdateMembreRequest updateMembreRequest) {
+        return ResponseEntity.ok(equipeService.updateLivreur(id, updateMembreRequest));
     }
 }

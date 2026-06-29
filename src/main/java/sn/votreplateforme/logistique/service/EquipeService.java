@@ -67,6 +67,15 @@ public class EquipeService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
+    public MembreResponse updateCloseur(Long id, sn.votreplateforme.logistique.dto.UpdateMembreRequest request) {
+        sn.votreplateforme.logistique.entity.Closeur closeur = closeurRepository.findById(id)
+                .orElseThrow(() -> new sn.votreplateforme.logistique.exception.ResourceNotFoundException(
+                        "Closeur non trouvé: " + id));
+        appliquerModifs(closeur, request);
+        return mapToMembreResponse(closeurRepository.save(closeur), UserRole.CLOSEUR);
+    }
+
     // ==================== LIVREURS ====================
 
     @Transactional
@@ -93,6 +102,36 @@ public class EquipeService {
         return livreurRepository.findAll().stream()
                 .map(this::mapToLivreurResponse)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public LivreurResponse updateLivreur(Long id, sn.votreplateforme.logistique.dto.UpdateMembreRequest request) {
+        Livreur livreur = livreurRepository.findById(id)
+                .orElseThrow(() -> new sn.votreplateforme.logistique.exception.ResourceNotFoundException(
+                        "Livreur non trouvé: " + id));
+        appliquerModifs(livreur, request);
+        if (request.getZonePreferee() != null) {
+            livreur.setZonePreferee(request.getZonePreferee());
+        }
+        return mapToLivreurResponse(livreurRepository.save(livreur));
+    }
+
+    /** Applique les modifications communes (User) avec contrôle d'unicité du téléphone/email. */
+    private void appliquerModifs(sn.votreplateforme.logistique.entity.User user,
+                                 sn.votreplateforme.logistique.dto.UpdateMembreRequest request) {
+        if (request.getNom() != null) user.setNom(request.getNom());
+        if (request.getPrenom() != null) user.setPrenom(request.getPrenom());
+        if (request.getTelephone() != null && !request.getTelephone().equals(user.getTelephone())) {
+            if (userRepository.findByTelephone(request.getTelephone()).isPresent()) {
+                throw new IllegalArgumentException("Un compte existe déjà avec ce numéro de téléphone");
+            }
+            user.setTelephone(request.getTelephone());
+        }
+        if (request.getEmail() != null) user.setEmail(request.getEmail());
+        if (request.getActif() != null) user.setActif(request.getActif());
+        if (request.getPassword() != null && !request.getPassword().isBlank()) {
+            user.setPassword(passwordEncoder.encode(request.getPassword()));
+        }
     }
 
     // ==================== HELPERS ====================

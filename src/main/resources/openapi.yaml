@@ -2141,6 +2141,66 @@ paths:
       security:
         - bearerAuth: [ ]
 
+  /admin/closeurs/{id}:
+    put:
+      tags:
+        - Admin - Equipe
+      operationId: updateCloseur
+      summary: Modifier un closeur
+      parameters:
+        - $ref: '#/components/parameters/MembreIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMembreRequest'
+      responses:
+        '200':
+          description: Closeur mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembreResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - bearerAuth: [ ]
+
+  /admin/livreurs/{id}:
+    put:
+      tags:
+        - Admin - Equipe
+      operationId: updateLivreur
+      summary: Modifier un livreur
+      parameters:
+        - $ref: '#/components/parameters/MembreIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMembreRequest'
+      responses:
+        '200':
+          description: Livreur mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LivreurResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - bearerAuth: [ ]
+
   # ============================================
   # LIVREUR - Mes livraisons
   # ============================================
@@ -2653,6 +2713,14 @@ components:
       in: path
       required: true
       description: Identifiant du produit
+      schema:
+        type: integer
+        format: int64
+    MembreIdParam:
+      name: id
+      in: path
+      required: true
+      description: Identifiant du membre (closeur ou livreur)
       schema:
         type: integer
         format: int64
@@ -3707,6 +3775,27 @@ components:
         livreurId:
           type: integer
           format: int64
+
+    UpdateMembreRequest:
+      type: object
+      properties:
+        nom:
+          type: string
+        prenom:
+          type: string
+        telephone:
+          type: string
+        email:
+          type: string
+        actif:
+          type: boolean
+        zonePreferee:
+          type: string
+          description: Uniquement pour les livreurs
+        password:
+          type: string
+          description: Optionnel - pour réinitialiser le mot de passe
+          minLength: 6
 
     CommentaireRequest:
       type: object
