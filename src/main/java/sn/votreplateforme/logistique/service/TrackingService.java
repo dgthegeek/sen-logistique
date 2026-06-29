@@ -81,27 +81,41 @@ public class TrackingService {
         etape1.setEffectue(true);
         timeline.add(etape1);
 
-        // Ã‰tape 2 : COLIS_RECUPERE (si ramassÃ© ou aprÃ¨s)
+        // Étape 2 : Commande confirmée / préparée (nouveau cycle)
         TrackingResponseTimelineInner etape2 = new TrackingResponseTimelineInner();
         etape2.setEtape(TrackingResponseTimelineInner.EtapeEnum.COLIS_RECUPERE);
 
-        if (livraison.getDateRamassage() != null) {
-            etape2.setDate(convertToOffsetDateTime(livraison.getDateRamassage()));
+        boolean confirmee = livraison.getStatut() == StatutLivraison.CONFIRMEE
+                || livraison.getStatut() == StatutLivraison.PRETE_A_LIVRER
+                || livraison.getStatut() == StatutLivraison.ASSIGNEE
+                || livraison.getStatut() == StatutLivraison.EN_LIVRAISON
+                || livraison.getStatut() == StatutLivraison.LIVREE
+                // anciens statuts (dormant)
+                || livraison.getDateRamassage() != null;
+        if (confirmee) {
+            if (livraison.getDateConfirmation() != null) {
+                etape2.setDate(convertToOffsetDateTime(livraison.getDateConfirmation()));
+            } else if (livraison.getDateRamassage() != null) {
+                etape2.setDate(convertToOffsetDateTime(livraison.getDateRamassage()));
+            }
             etape2.setEffectue(true);
         } else {
             etape2.setEffectue(false);
         }
         timeline.add(etape2);
 
-        // Ã‰tape 3 : EN_COURS_LIVRAISON (si statut RAMASSE ou EN_ROUTE)
+        // Étape 3 : EN_COURS_LIVRAISON (assignée / en livraison)
         TrackingResponseTimelineInner etape3 = new TrackingResponseTimelineInner();
         etape3.setEtape(TrackingResponseTimelineInner.EtapeEnum.EN_COURS_LIVRAISON);
 
-        if (livraison.getStatut() == StatutLivraison.RAMASSE ||
-                livraison.getStatut() == StatutLivraison.EN_ROUTE) {
-            etape3.setEffectue(true);
-            // Pas de date prÃ©cise pour "en cours"
-        } else if (livraison.getStatut() == StatutLivraison.LIVREE) {
+        if (livraison.getStatut() == StatutLivraison.ASSIGNEE
+                || livraison.getStatut() == StatutLivraison.EN_LIVRAISON
+                || livraison.getStatut() == StatutLivraison.LIVREE
+                || livraison.getStatut() == StatutLivraison.RAMASSE
+                || livraison.getStatut() == StatutLivraison.EN_ROUTE) {
+            if (livraison.getDateEnRoute() != null) {
+                etape3.setDate(convertToOffsetDateTime(livraison.getDateEnRoute()));
+            }
             etape3.setEffectue(true);
         } else {
             etape3.setEffectue(false);
