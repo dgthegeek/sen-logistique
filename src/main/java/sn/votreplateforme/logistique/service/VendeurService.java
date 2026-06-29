@@ -57,7 +57,14 @@ public class VendeurService {
         int colisLivres = (int) livraisonsJour.stream()
                 .filter(l -> l.getStatut() == StatutLivraison.LIVREE)
                 .count();
-        int colisEnCours = totalColis - colisLivres;
+        // Échecs / annulations : ne doivent PAS être comptés comme "en cours"
+        int colisTermines = (int) livraisonsJour.stream()
+                .filter(l -> l.getStatut() == StatutLivraison.ECHEC
+                        || l.getStatut() == StatutLivraison.ECHEC_ABSENT
+                        || l.getStatut() == StatutLivraison.ECHEC_REFUSE
+                        || l.getStatut() == StatutLivraison.ANNULEE)
+                .count();
+        int colisEnCours = Math.max(0, totalColis - colisLivres - colisTermines);
 
         // Calcul du solde en attente
         BigDecimal soldeEnAttente = calculerSoldeEnAttente(vendeur);

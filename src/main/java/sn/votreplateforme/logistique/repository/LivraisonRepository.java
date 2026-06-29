@@ -119,6 +119,13 @@ public interface LivraisonRepository extends JpaRepository<Livraison, Long> {
             LocalDateTime dateFin
     );
 
+    /** Nombre d'échecs survenus dans une plage (par date d'échec). */
+    long countByStatutAndDateEchecBetween(
+            StatutLivraison statut,
+            LocalDateTime debut,
+            LocalDateTime fin
+    );
+
     @Query("SELECT l FROM Livraison l WHERE l.statut = 'LIVREE' AND l.dateLivraison BETWEEN :debut AND :fin")
     List<Livraison> findLivraisonsDuJour(@Param("debut") LocalDateTime debut, @Param("fin") LocalDateTime fin);
 

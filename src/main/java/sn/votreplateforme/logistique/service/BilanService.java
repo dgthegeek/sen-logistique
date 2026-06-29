@@ -30,9 +30,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class BilanService {
 
-    private static final List<StatutLivraison> ECHECS = List.of(
-            StatutLivraison.ECHEC, StatutLivraison.ECHEC_ABSENT, StatutLivraison.ECHEC_REFUSE);
-
     private final LivraisonRepository livraisonRepository;
     private final VendeurRepository vendeurRepository;
     private final LivreurRepository livreurRepository;
@@ -48,7 +45,9 @@ public class BilanService {
         List<Livraison> livrees = livraisonRepository.findLivraisonsDuJour(debut, fin);
 
         int nbLivrees = livrees.size();
-        int nbEchecs = (int) creees.stream().filter(l -> ECHECS.contains(l.getStatut())).count();
+        // Échecs survenus ce jour (par date d'échec), cohérent avec les livraisons du jour
+        int nbEchecs = (int) livraisonRepository.countByStatutAndDateEchecBetween(
+                StatutLivraison.ECHEC, debut, fin);
 
         BigDecimal ca = BigDecimal.ZERO;
         BigDecimal benefice = BigDecimal.ZERO;

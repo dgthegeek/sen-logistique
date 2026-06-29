@@ -200,6 +200,11 @@ public class Livraison {
     @Column(name = "motif_echec", length = 30)
     private MotifEchec motifEchec;
 
+    /**
+     * Date à laquelle la livraison a échoué (passage à ECHEC).
+     */
+    private LocalDateTime dateEchec;
+
     // ==================== STOCK ====================
 
     /**
@@ -339,6 +344,7 @@ public class Livraison {
         this.statut = StatutLivraison.ECHEC;
         this.motifEchec = motif;
         this.commentaireLivraison = commentaire;
+        this.dateEchec = LocalDateTime.now();
     }
 
     /**
