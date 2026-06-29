@@ -31,6 +31,10 @@ public interface ProduitRepository extends JpaRepository<Produit, Long> {
     @Query("SELECT p FROM Produit p WHERE p.quantiteStock <= p.seuilAlerte ORDER BY p.quantiteStock ASC")
     List<Produit> findEnAlerte();
 
+    /** Stock total restant (toutes les marchandises). */
+    @Query("SELECT COALESCE(SUM(p.quantiteStock), 0) FROM Produit p")
+    long sumStockTotal();
+
     @Query("SELECT p FROM Produit p WHERE " +
             "(:search IS NULL OR LOWER(p.nom) LIKE LOWER(CONCAT('%', :search, '%')) " +
             "OR LOWER(p.code) LIKE LOWER(CONCAT('%', :search, '%'))) " +

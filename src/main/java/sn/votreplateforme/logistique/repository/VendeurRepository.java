@@ -23,6 +23,10 @@ public interface VendeurRepository extends JpaRepository<Vendeur, Long> {
 
     List<Vendeur> findByStatut(StatutVendeur statut);
 
+    /** Total dû aux partenaires (somme des soldes en attente). */
+    @Query("SELECT COALESCE(SUM(v.soldeEnAttente), 0) FROM Vendeur v")
+    BigDecimal sumSoldeEnAttente();
+
     /**
      * Recherche avec ID uniquement (évite le problème password)
      */

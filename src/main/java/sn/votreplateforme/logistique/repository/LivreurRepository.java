@@ -15,4 +15,6 @@ public interface LivreurRepository extends JpaRepository<Livreur, Long> {
     Optional<Livreur> findByTelephone(String telephone);
 
     Optional<Livreur> findByEmail(String email);
+
+    long countByActifTrue();
 }

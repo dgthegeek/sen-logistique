@@ -2292,6 +2292,34 @@ paths:
       security:
         - bearerAuth: [ ]
 
+  /admin/bilan:
+    get:
+      tags:
+        - Admin - Stats
+      operationId: bilanJour
+      summary: Bilan quotidien (KPI CEO)
+      parameters:
+        - name: date
+          in: query
+          required: false
+          description: Date du bilan (par défaut aujourd'hui)
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Bilan du jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BilanJour'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - bearerAuth: [ ]
+
   # ============================================
   # ADMIN - STOCK / PRODUITS
   # ============================================
@@ -3785,6 +3813,46 @@ components:
           type: number
           format: double
           description: Pourcentage d'échec (0-100)
+
+    # ============================================
+    # BILAN / KPI SCHEMA
+    # ============================================
+    BilanJour:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        commandesCreees:
+          type: integer
+        livrees:
+          type: integer
+        echecs:
+          type: integer
+        tauxReussite:
+          type: number
+          format: double
+        chiffreAffaires:
+          type: number
+          format: decimal
+          description: CA livré du jour (cash collecté)
+        beneficeEstime:
+          type: number
+          format: decimal
+          description: Somme des frais de livraison du jour
+        montantDuPartenaires:
+          type: number
+          format: decimal
+        delaiMoyenMinutes:
+          type: integer
+        partenairesActifs:
+          type: integer
+        livreursActifs:
+          type: integer
+        stockTotalRestant:
+          type: integer
+        produitsEnAlerte:
+          type: integer
 
     # ============================================
     # STOCK SCHEMAS
