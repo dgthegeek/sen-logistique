@@ -2774,6 +2774,14 @@ components:
         descriptionProduit:
           type: string
           example: "Ensemble wax"
+        produitId:
+          type: integer
+          format: int64
+          description: "Produit du stock lié (optionnel) - décrément auto à la livraison"
+        quantite:
+          type: integer
+          minimum: 1
+          description: "Quantité commandée du produit lié (optionnel)"
         fragile:
           type: boolean
           default: false

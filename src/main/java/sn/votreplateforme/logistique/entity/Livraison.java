@@ -200,6 +200,22 @@ public class Livraison {
     @Column(name = "motif_echec", length = 30)
     private MotifEchec motifEchec;
 
+    // ==================== STOCK ====================
+
+    /**
+     * Produit lié à la commande (optionnel). Si présent, le stock est
+     * automatiquement décrémenté à la livraison.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "produit_id")
+    private Produit produit;
+
+    /**
+     * Quantité commandée du produit (utilisée pour le décrément de stock).
+     */
+    @Column(name = "quantite")
+    private Integer quantite;
+
     // ==================== APRÈS LIVRAISON ====================
 
     /**

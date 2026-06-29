@@ -32,6 +32,7 @@ public class DeliveryService {
 
     private final LivraisonRepository livraisonRepository;
     private final NotificationService notificationService;
+    private final StockService stockService;
 
     /**
      * Récupère les informations de livraison pour le formulaire de confirmation
@@ -157,6 +158,12 @@ public class DeliveryService {
         livraison.setCommentaireLivraison(request.getCommentaire());
 
         livraisonRepository.save(livraison);
+
+        // Décrément automatique du stock si un produit est lié
+        if (livraison.getProduit() != null && livraison.getQuantite() != null && livraison.getQuantite() > 0) {
+            stockService.enregistrerSortieLivraison(
+                    livraison.getProduit().getId(), livraison.getQuantite(), livraison.getId());
+        }
 
         log.info("✅ Livraison {} mise à jour - Statut: LIVREE", numeroTracking);
 

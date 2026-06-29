@@ -39,6 +39,7 @@ public class LivreurService {
 
     private final LivraisonRepository livraisonRepository;
     private final LivreurRepository livreurRepository;
+    private final StockService stockService;
 
     @Transactional(readOnly = true)
     public List<CommandeLivreur> mesLivraisons(sn.votreplateforme.logistique.dto.StatutLivraison statutDto) {
@@ -81,8 +82,15 @@ public class LivreurService {
             throw new BusinessException("Le montant encaissé (cashCollecte) est obligatoire");
         }
         l.marquerLivree(request.getCashCollecte(), request.getCommentaire());
+        CommandeLivreur result = mapToCommandeLivreur(livraisonRepository.save(l));
+
+        // Décrément automatique du stock si un produit est lié
+        if (l.getProduit() != null && l.getQuantite() != null && l.getQuantite() > 0) {
+            stockService.enregistrerSortieLivraison(l.getProduit().getId(), l.getQuantite(), l.getId());
+        }
+
         log.info("Livraison {} livrée - cash collecté: {}", l.getNumeroTracking(), request.getCashCollecte());
-        return mapToCommandeLivreur(livraisonRepository.save(l));
+        return result;
     }
 
     @Transactional

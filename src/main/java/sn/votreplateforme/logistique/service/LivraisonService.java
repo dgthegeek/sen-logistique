@@ -15,6 +15,7 @@ import sn.votreplateforme.logistique.entity.*;
 import sn.votreplateforme.logistique.exception.BadRequestException;
 import sn.votreplateforme.logistique.exception.NotFoundException;
 import sn.votreplateforme.logistique.repository.LivraisonRepository;
+import sn.votreplateforme.logistique.repository.ProduitRepository;
 import sn.votreplateforme.logistique.repository.UserRepository;
 import sn.votreplateforme.logistique.repository.VendeurRepository;
 import sn.votreplateforme.logistique.security.SecurityUtils;
@@ -47,6 +48,7 @@ public class LivraisonService {
     private final TrackingNumberGenerator trackingNumberGenerator;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
+    private final ProduitRepository produitRepository;
 
     /**
      * Crée une nouvelle livraison
@@ -136,6 +138,15 @@ public class LivraisonService {
         livraison.setDescriptionProduit(request.getDescriptionProduit());
         livraison.setFragile(request.getFragile() != null ? request.getFragile() : false);
         livraison.setPoids(BigDecimal.valueOf(request.getPoids()));
+
+        // Lien produit (optionnel) pour le décrément automatique du stock à la livraison
+        if (request.getProduitId() != null) {
+            Produit produit = produitRepository.findById(request.getProduitId())
+                    .orElseThrow(() -> new NotFoundException("Produit non trouvé: " + request.getProduitId()));
+            livraison.setProduit(produit);
+            livraison.setQuantite(request.getQuantite() != null && request.getQuantite() > 0
+                    ? request.getQuantite() : 1);
+        }
 
         // Financier
         livraison.setMontantCOD(request.getMontantCOD());
