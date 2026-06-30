@@ -177,6 +177,23 @@ public class StockService {
     }
 
     /**
+     * Décrément automatique du stock pour une livraison livrée :
+     * gère le multi-produits (lignes de commande) ou le produit unique (compat).
+     */
+    @Transactional
+    public void enregistrerSortiesLivraison(sn.votreplateforme.logistique.entity.Livraison livraison) {
+        if (livraison.getLignes() != null && !livraison.getLignes().isEmpty()) {
+            for (sn.votreplateforme.logistique.entity.LigneCommande ligne : livraison.getLignes()) {
+                if (ligne.getProduit() != null && ligne.getQuantite() != null && ligne.getQuantite() > 0) {
+                    enregistrerSortieLivraison(ligne.getProduit().getId(), ligne.getQuantite(), livraison.getId());
+                }
+            }
+        } else if (livraison.getProduit() != null && livraison.getQuantite() != null && livraison.getQuantite() > 0) {
+            enregistrerSortieLivraison(livraison.getProduit().getId(), livraison.getQuantite(), livraison.getId());
+        }
+    }
+
+    /**
      * Sortie de stock automatique lors d'une livraison effectuée.
      * Utilisé par le module Livraison (décrément à la livraison).
      */

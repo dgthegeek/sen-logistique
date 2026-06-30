@@ -217,9 +217,22 @@ public class Livraison {
 
     /**
      * Quantité commandée du produit (utilisée pour le décrément de stock).
+     * Conservé pour compatibilité ; le multi-produits passe par {@link #lignes}.
      */
     @Column(name = "quantite")
     private Integer quantite;
+
+    /**
+     * Lignes de commande (multi-produits). Si non vide, prime sur produit/quantite.
+     */
+    @OneToMany(mappedBy = "livraison", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private java.util.List<LigneCommande> lignes = new java.util.ArrayList<>();
+
+    public void ajouterLigne(LigneCommande ligne) {
+        ligne.setLivraison(this);
+        this.lignes.add(ligne);
+    }
 
     // ==================== APRÈS LIVRAISON ====================
 

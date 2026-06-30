@@ -84,10 +84,8 @@ public class LivreurService {
         l.marquerLivree(request.getCashCollecte(), request.getCommentaire());
         CommandeLivreur result = mapToCommandeLivreur(livraisonRepository.save(l));
 
-        // Décrément automatique du stock si un produit est lié
-        if (l.getProduit() != null && l.getQuantite() != null && l.getQuantite() > 0) {
-            stockService.enregistrerSortieLivraison(l.getProduit().getId(), l.getQuantite(), l.getId());
-        }
+        // Décrément automatique du stock (multi-produits ou produit unique)
+        stockService.enregistrerSortiesLivraison(l);
 
         log.info("Livraison {} livrée - cash collecté: {}", l.getNumeroTracking(), request.getCashCollecte());
         return result;

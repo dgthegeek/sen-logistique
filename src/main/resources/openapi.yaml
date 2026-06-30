@@ -2873,11 +2873,16 @@ components:
         produitId:
           type: integer
           format: int64
-          description: "Produit du stock lié (optionnel) - décrément auto à la livraison"
+          description: "Déprécié - utiliser items. Produit unique lié (optionnel)."
         quantite:
           type: integer
           minimum: 1
-          description: "Quantité commandée du produit lié (optionnel)"
+          description: "Déprécié - utiliser items. Quantité du produit unique."
+        items:
+          type: array
+          description: "Produits commandés (multi-produits). Le montant produit = somme(prix x quantité)."
+          items:
+            $ref: '#/components/schemas/LigneCommandeRequest'
         fragile:
           type: boolean
           default: false
@@ -4034,6 +4039,19 @@ components:
           type: integer
         actif:
           type: boolean
+
+    LigneCommandeRequest:
+      type: object
+      required:
+        - produitId
+        - quantite
+      properties:
+        produitId:
+          type: integer
+          format: int64
+        quantite:
+          type: integer
+          minimum: 1
 
     MouvementStockRequest:
       type: object

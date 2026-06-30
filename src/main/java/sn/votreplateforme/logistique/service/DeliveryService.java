@@ -159,11 +159,8 @@ public class DeliveryService {
 
         livraisonRepository.save(livraison);
 
-        // Décrément automatique du stock si un produit est lié
-        if (livraison.getProduit() != null && livraison.getQuantite() != null && livraison.getQuantite() > 0) {
-            stockService.enregistrerSortieLivraison(
-                    livraison.getProduit().getId(), livraison.getQuantite(), livraison.getId());
-        }
+        // Décrément automatique du stock (multi-produits ou produit unique)
+        stockService.enregistrerSortiesLivraison(livraison);
 
         log.info("✅ Livraison {} mise à jour - Statut: LIVREE", numeroTracking);
 

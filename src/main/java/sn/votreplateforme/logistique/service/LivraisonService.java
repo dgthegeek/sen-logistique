@@ -139,8 +139,27 @@ public class LivraisonService {
         livraison.setFragile(request.getFragile() != null ? request.getFragile() : false);
         livraison.setPoids(BigDecimal.valueOf(request.getPoids()));
 
-        // Lien produit (optionnel) pour le décrément automatique du stock à la livraison
-        if (request.getProduitId() != null) {
+        // ===== Produits liés (multi-produits) pour le décrément auto + calcul du COD =====
+        BigDecimal montantProduits = null;
+        if (request.getItems() != null && !request.getItems().isEmpty()) {
+            // Multi-produits : on calcule le total à partir des prix catalogue
+            montantProduits = BigDecimal.ZERO;
+            for (var item : request.getItems()) {
+                Produit produit = produitRepository.findById(item.getProduitId())
+                        .orElseThrow(() -> new NotFoundException("Produit non trouvé: " + item.getProduitId()));
+                int qte = (item.getQuantite() != null && item.getQuantite() > 0) ? item.getQuantite() : 1;
+                BigDecimal prix = produit.getPrixUnitaire() != null ? produit.getPrixUnitaire() : BigDecimal.ZERO;
+
+                LigneCommande ligne = LigneCommande.builder()
+                        .produit(produit)
+                        .quantite(qte)
+                        .prixUnitaire(prix)
+                        .build();
+                livraison.ajouterLigne(ligne);
+                montantProduits = montantProduits.add(prix.multiply(BigDecimal.valueOf(qte)));
+            }
+        } else if (request.getProduitId() != null) {
+            // Compat : produit unique
             Produit produit = produitRepository.findById(request.getProduitId())
                     .orElseThrow(() -> new NotFoundException("Produit non trouvé: " + request.getProduitId()));
             livraison.setProduit(produit);
@@ -148,8 +167,12 @@ public class LivraisonService {
                     ? request.getQuantite() : 1);
         }
 
-        // Financier
-        livraison.setMontantCOD(request.getMontantCOD());
+        // Financier : si des produits du catalogue sont liés, le COD = total produits + frais
+        // (autorité serveur, évite tout écart de calcul côté client). Sinon on garde le COD fourni.
+        BigDecimal montantCOD = (montantProduits != null)
+                ? montantProduits.add(fraisLivraison)
+                : request.getMontantCOD();
+        livraison.setMontantCOD(montantCOD);
         livraison.setFraisLivraison(fraisLivraison);
 
         // Statut et options - nouveau cycle Closing : la commande entre en file closeur
