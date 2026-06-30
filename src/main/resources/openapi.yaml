@@ -4365,7 +4365,7 @@ components:
           example: "fatou@example.com"
         role:
           type: string
-          enum: [ VENDEUR, ADMIN ]
+          enum: [ VENDEUR, ADMIN, CLOSEUR, LIVREUR ]
         dateInscription:
           type: string
           format: date-time

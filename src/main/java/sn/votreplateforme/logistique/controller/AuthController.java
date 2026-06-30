@@ -73,6 +73,10 @@ public class AuthController implements AuthenticationApi {
             
             return ResponseEntity.ok(response);
             
+        } catch (org.springframework.security.core.AuthenticationException e) {
+            // Mauvais identifiants -> laisser le handler renvoyer un 401 propre
+            log.warn("❌ Identifiants invalides pour: {}", loginRequest.getTelephone());
+            throw e;
         } catch (IllegalArgumentException e) {
             log.warn("❌ Échec de connexion: {}", e.getMessage());
             throw e;
