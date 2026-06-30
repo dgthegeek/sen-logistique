@@ -2388,13 +2388,20 @@ paths:
       tags:
         - Admin - Stock
       operationId: listProduits
-      summary: Lister les produits (avec recherche et pagination)
+      summary: Lister les produits (avec recherche, filtre partenaire et pagination)
       parameters:
         - name: search
           in: query
           required: false
           schema:
             type: string
+        - name: vendeurId
+          in: query
+          required: false
+          description: Filtrer par partenaire (vendeur)
+          schema:
+            type: integer
+            format: int64
         - name: page
           in: query
           required: false

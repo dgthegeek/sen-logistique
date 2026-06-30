@@ -45,15 +45,20 @@ public class StockService {
     // ==================== LECTURE ====================
 
     @Transactional(readOnly = true)
-    public PageProduit listProduits(String search, Integer page, Integer size) {
+    public PageProduit listProduits(String search, Long vendeurId, Integer page, Integer size) {
         int pageNumber = (page != null && page >= 0) ? page : 0;
         int pageSize = (size != null && size > 0 && size <= 200) ? size : 50;
         Pageable pageable = PageRequest.of(pageNumber, pageSize);
 
         String s = (search != null && !search.isBlank()) ? search.trim() : null;
-        Page<Produit> produits = (s == null)
-                ? produitRepository.findAllByOrderByDateCreationDesc(pageable)
-                : produitRepository.rechercher(s, pageable);
+        Page<Produit> produits;
+        if (vendeurId != null) {
+            produits = produitRepository.findByVendeurId(vendeurId, pageable);
+        } else if (s == null) {
+            produits = produitRepository.findAllByOrderByDateCreationDesc(pageable);
+        } else {
+            produits = produitRepository.rechercher(s, pageable);
+        }
 
         PageProduit response = new PageProduit();
         response.setContent(produits.getContent().stream().map(this::map).collect(Collectors.toList()));

@@ -22,8 +22,8 @@ public class AdminStockController implements AdminStockApi {
     private final StockService stockService;
 
     @Override
-    public ResponseEntity<PageProduit> listProduits(String search, Integer page, Integer size) {
-        return ResponseEntity.ok(stockService.listProduits(search, page, size));
+    public ResponseEntity<PageProduit> listProduits(String search, Long vendeurId, Integer page, Integer size) {
+        return ResponseEntity.ok(stockService.listProduits(search, vendeurId, page, size));
     }
 
     @Override
