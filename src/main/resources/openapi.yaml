@@ -2666,6 +2666,66 @@ paths:
           $ref: '#/components/responses/ForbiddenError'
       security:
         - bearerAuth: [ ]
+    post:
+      tags:
+        - Vendeur
+      operationId: creerMonProduit
+      summary: Le vendeur crée un produit de son catalogue
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMonProduitRequest'
+      responses:
+        '201':
+          description: Produit créé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProduitResponse'
+        '400':
+          description: Requête invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - bearerAuth: [ ]
+
+  /vendeur/produits/{id}:
+    put:
+      tags:
+        - Vendeur
+      operationId: modifierMonProduit
+      summary: Le vendeur modifie un produit de son catalogue
+      parameters:
+        - $ref: '#/components/parameters/ProduitIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProduitRequest'
+      responses:
+        '200':
+          description: Produit mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProduitResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - bearerAuth: [ ]
 
 # ============================================
 # COMPONENTS
@@ -4015,6 +4075,25 @@ components:
         vendeurId:
           type: integer
           format: int64
+        prixUnitaire:
+          type: number
+          format: decimal
+        quantiteInitiale:
+          type: integer
+          default: 0
+        seuilAlerte:
+          type: integer
+          default: 5
+
+    CreateMonProduitRequest:
+      type: object
+      required:
+        - nom
+      properties:
+        nom:
+          type: string
+        description:
+          type: string
         prixUnitaire:
           type: number
           format: decimal

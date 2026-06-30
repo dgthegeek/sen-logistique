@@ -49,6 +49,17 @@ public class VendeurController implements VendeurApi {
         return ResponseEntity.ok(stockService.getProduitsVendeurConnecte());
     }
 
+    @Override
+    public ResponseEntity<ProduitResponse> creerMonProduit(CreateMonProduitRequest createMonProduitRequest) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(stockService.createProduitVendeur(createMonProduitRequest));
+    }
+
+    @Override
+    public ResponseEntity<ProduitResponse> modifierMonProduit(Long id, UpdateProduitRequest updateProduitRequest) {
+        return ResponseEntity.ok(stockService.updateProduitVendeur(id, updateProduitRequest));
+    }
+
     /**
      * GET /vendeur/dashboard
      * Tableau de bord du vendeur avec statistiques

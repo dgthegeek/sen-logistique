@@ -95,6 +95,50 @@ public class StockService {
                 .stream().map(this::map).collect(Collectors.toList());
     }
 
+    /** Le vendeur connecté crée un produit de son catalogue. */
+    @Transactional
+    public ProduitResponse createProduitVendeur(CreateMonProduitRequest request) {
+        Vendeur vendeur = getVendeurConnecte();
+        String code = codeGenerator.generate();
+        int quantiteInitiale = request.getQuantiteInitiale() != null ? request.getQuantiteInitiale() : 0;
+
+        Produit produit = Produit.builder()
+                .code(code)
+                .nom(request.getNom())
+                .description(request.getDescription())
+                .vendeur(vendeur)
+                .prixUnitaire(request.getPrixUnitaire())
+                .quantiteStock(quantiteInitiale)
+                .seuilAlerte(request.getSeuilAlerte() != null ? request.getSeuilAlerte() : 5)
+                .qrCodeUrl(qrCodeService.generateProduitQrUrl(code))
+                .actif(true)
+                .build();
+        produit = produitRepository.save(produit);
+
+        if (quantiteInitiale > 0) {
+            enregistrerMouvement(produit, TypeMouvement.CREATION, quantiteInitiale,
+                    0, quantiteInitiale, null, "Stock initial à la création");
+        }
+        log.info("Vendeur {} a créé le produit {} ({})", vendeur.getId(), produit.getNom(), code);
+        return map(produit);
+    }
+
+    /** Le vendeur connecté modifie un produit de son propre catalogue. */
+    @Transactional
+    public ProduitResponse updateProduitVendeur(Long id, UpdateProduitRequest request) {
+        Vendeur vendeur = getVendeurConnecte();
+        Produit produit = getProduitEntity(id);
+        if (produit.getVendeur() == null || !produit.getVendeur().getId().equals(vendeur.getId())) {
+            throw new ForbiddenException("Ce produit ne fait pas partie de votre catalogue");
+        }
+        if (request.getNom() != null) produit.setNom(request.getNom());
+        if (request.getDescription() != null) produit.setDescription(request.getDescription());
+        if (request.getPrixUnitaire() != null) produit.setPrixUnitaire(request.getPrixUnitaire());
+        if (request.getSeuilAlerte() != null) produit.setSeuilAlerte(request.getSeuilAlerte());
+        if (request.getActif() != null) produit.setActif(request.getActif());
+        return map(produitRepository.save(produit));
+    }
+
     // ==================== ÉCRITURE ====================
 
     @Transactional
