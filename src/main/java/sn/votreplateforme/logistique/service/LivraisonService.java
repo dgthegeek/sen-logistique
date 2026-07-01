@@ -148,6 +148,14 @@ public class LivraisonService {
                 Produit produit = produitRepository.findById(item.getProduitId())
                         .orElseThrow(() -> new NotFoundException("Produit non trouvé: " + item.getProduitId()));
                 int qte = (item.getQuantite() != null && item.getQuantite() > 0) ? item.getQuantite() : 1;
+
+                // Blocage si stock insuffisant
+                if (produit.getQuantiteStock() == null || produit.getQuantiteStock() < qte) {
+                    throw new BadRequestException("Stock insuffisant pour « " + produit.getNom()
+                            + " » : demandé " + qte + ", disponible "
+                            + (produit.getQuantiteStock() != null ? produit.getQuantiteStock() : 0));
+                }
+
                 BigDecimal prix = produit.getPrixUnitaire() != null ? produit.getPrixUnitaire() : BigDecimal.ZERO;
 
                 LigneCommande ligne = LigneCommande.builder()

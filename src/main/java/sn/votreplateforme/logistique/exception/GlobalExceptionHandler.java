@@ -167,6 +167,40 @@ public class GlobalExceptionHandler {
                 .body(errorResponse);
     }
 
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<ErrorResponse> handleBadRequest(
+            BadRequestException ex,
+            WebRequest request) {
+
+        log.warn("Requête invalide: {}", ex.getMessage());
+
+        ErrorResponse errorResponse = new ErrorResponse();
+        errorResponse.setTimestamp(OffsetDateTime.now());
+        errorResponse.setStatus(HttpStatus.BAD_REQUEST.value());
+        errorResponse.setError("Bad Request");
+        errorResponse.setMessage(ex.getMessage());
+        errorResponse.setPath(request.getDescription(false).replace("uri=", ""));
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    }
+
+    @ExceptionHandler(NotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNotFound(
+            NotFoundException ex,
+            WebRequest request) {
+
+        log.warn("Ressource introuvable: {}", ex.getMessage());
+
+        ErrorResponse errorResponse = new ErrorResponse();
+        errorResponse.setTimestamp(OffsetDateTime.now());
+        errorResponse.setStatus(HttpStatus.NOT_FOUND.value());
+        errorResponse.setError("Not Found");
+        errorResponse.setMessage(ex.getMessage());
+        errorResponse.setPath(request.getDescription(false).replace("uri=", ""));
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+    }
+
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ErrorResponse> handleBusinessException(
             BusinessException ex,
