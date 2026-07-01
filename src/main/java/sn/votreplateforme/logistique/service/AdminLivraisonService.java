@@ -216,6 +216,16 @@ public class AdminLivraisonService {
         financierInfo.setCashCollecte(livraison.getCashCollecte());
         detail.setFinancier(financierInfo);
 
+        // Livreur assigné (si présent)
+        if (livraison.getLivreur() != null) {
+            LivraisonDetailResponseLivreur livreurInfo = new LivraisonDetailResponseLivreur();
+            livreurInfo.setId(livraison.getLivreur().getId());
+            livreurInfo.setNom(livraison.getLivreur().getNom());
+            livreurInfo.setPrenom(livraison.getLivreur().getPrenom());
+            livreurInfo.setTelephone(livraison.getLivreur().getTelephone());
+            detail.setLivreur(livreurInfo);
+        }
+
         // Zone et urgence
         detail.setZone(livraison.getAdresseDestination().getZone().getNom());
         detail.setUrgence(sn.votreplateforme.logistique.dto.TypeUrgence.valueOf(
