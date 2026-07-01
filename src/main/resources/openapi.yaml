@@ -3140,6 +3140,11 @@ components:
               type: number
               format: decimal
               example: 145000
+            chiffreAffaires:
+              type: number
+              format: decimal
+              description: "Chiffre d'affaires cumulé (prix produit des commandes livrées, hors frais)"
+              example: 850000
             prochainPaiement:
               type: string
               description: "Ã€ la demande du vendeur"
@@ -3152,6 +3157,11 @@ components:
           type: number
           format: decimal
           example: 387500
+        chiffreAffaires:
+          type: number
+          format: decimal
+          description: "Chiffre d'affaires cumulé (prix produit des commandes livrées, hors frais)"
+          example: 850000
         statistiquesMois:
           type: object
           properties:
@@ -3316,6 +3326,10 @@ components:
         dateDemande:
           type: string
           format: date-time
+        aDemande:
+          type: boolean
+          description: "true si le vendeur a explicitement demandé un paiement (demande EN_ATTENTE existante)"
+          example: true
 
     PageTransaction:
       type: object

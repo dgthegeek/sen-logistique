@@ -8,7 +8,9 @@ import sn.votreplateforme.logistique.dto.*;
 import sn.votreplateforme.logistique.entity.Livraison;
 import sn.votreplateforme.logistique.entity.StatutLivraison;
 import sn.votreplateforme.logistique.entity.Vendeur;
+import sn.votreplateforme.logistique.entity.Transaction;
 import sn.votreplateforme.logistique.repository.LivraisonRepository;
+import sn.votreplateforme.logistique.repository.TransactionRepository;
 import sn.votreplateforme.logistique.repository.VendeurRepository;
 
 import java.math.BigDecimal;
@@ -28,6 +30,8 @@ public class FinanceService {
 
     private final LivraisonRepository livraisonRepository;
     private final VendeurRepository vendeurRepository;
+    private final TransactionRepository transactionRepository;
+    private final FinanceCalculator financeCalculator;
 
     /**
      * Récupère le dashboard financier avec statistiques
@@ -59,9 +63,10 @@ public class FinanceService {
                 .map(l -> l.getCashCollecte() != null ? l.getCashCollecte() : BigDecimal.ZERO)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        // 4. Calculer le montant à payer aux vendeurs (soldes en attente)
+        // 4. Calculer le montant à payer aux vendeurs (solde disponible dynamique)
         BigDecimal aPayerVendeurs = vendeurRepository.findAll().stream()
-                .map(v -> v.getSoldeEnAttente() != null ? v.getSoldeEnAttente() : BigDecimal.ZERO)
+                .map(financeCalculator::soldeDisponible)
+                .filter(s -> s.compareTo(BigDecimal.ZERO) > 0)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         // 5. Calculer les commissions (40% des frais de livraison)
@@ -116,38 +121,58 @@ public class FinanceService {
     public AdminFinancesPaiementsPendingGet200Response getDemandesPaiementEnAttente() {
         log.info("Récupération des demandes de paiement en attente");
 
-        // 1. Récupérer tous les vendeurs avec solde > 0
-        List<Vendeur> vendeursAvecSolde = vendeurRepository
-                .findBySoldeEnAttenteGreaterThan(BigDecimal.ZERO);
+        // 1. Parcourir tous les vendeurs et ne garder que ceux ayant un solde disponible > 0.
+        //    Le solde est recalculé dynamiquement (CA livré - total déjà payé).
+        List<Vendeur> tousLesVendeurs = vendeurRepository.findAll();
 
         // 2. Construire les demandes de paiement
         List<DemandePaiement> demandes = new ArrayList<>();
         BigDecimal totalAPayer = BigDecimal.ZERO;
 
-        for (Vendeur vendeur : vendeursAvecSolde) {
+        for (Vendeur vendeur : tousLesVendeurs) {
+            BigDecimal soldeDisponible = financeCalculator.soldeDisponible(vendeur);
+            if (soldeDisponible.compareTo(BigDecimal.ZERO) <= 0) {
+                continue;
+            }
+
             // Compter le nombre de livraisons livrées
             long nombreLivraisons = livraisonRepository.countByVendeurAndStatut(
                     vendeur,
                     StatutLivraison.LIVREE
             );
 
+            // Le vendeur a-t-il explicitement demandé un paiement ?
+            var demandeEnAttente = transactionRepository
+                    .findFirstByVendeurAndTypeAndStatutOrderByDateTransactionAsc(
+                            vendeur,
+                            Transaction.TypeTransaction.PAIEMENT_VENDEUR,
+                            Transaction.StatutPaiement.EN_ATTENTE
+                    );
+
             // Créer l'objet DemandePaiement
             DemandePaiement demande = new DemandePaiement();
             demande.setId(vendeur.getId());
-            demande.setMontant(vendeur.getSoldeEnAttente());
+            demande.setMontant(soldeDisponible);
             demande.setNombreLivraisons((int) nombreLivraisons);
+            demande.setaDemande(demandeEnAttente.isPresent());
 
-            // Date de la plus ancienne livraison non payée
-            livraisonRepository.findFirstByVendeurAndStatutOrderByDateLivraisonAsc(
-                    vendeur,
-                    StatutLivraison.LIVREE
-            ).ifPresent(livraison -> {
-                if (livraison.getDateLivraison() != null) {
-                    demande.setDateDemande(
-                            livraison.getDateLivraison().atOffset(ZoneOffset.UTC)
-                    );
-                }
-            });
+            // Date : celle de la demande explicite si elle existe, sinon la plus ancienne livraison
+            if (demandeEnAttente.isPresent() && demandeEnAttente.get().getDateTransaction() != null) {
+                demande.setDateDemande(
+                        demandeEnAttente.get().getDateTransaction().atOffset(ZoneOffset.UTC)
+                );
+            } else {
+                livraisonRepository.findFirstByVendeurAndStatutOrderByDateLivraisonAsc(
+                        vendeur,
+                        StatutLivraison.LIVREE
+                ).ifPresent(livraison -> {
+                    if (livraison.getDateLivraison() != null) {
+                        demande.setDateDemande(
+                                livraison.getDateLivraison().atOffset(ZoneOffset.UTC)
+                        );
+                    }
+                });
+            }
 
             // Vendeur (objet imbriqué)
             LivraisonDetailResponseVendeur vendeurInfo = new LivraisonDetailResponseVendeur();
@@ -159,8 +184,13 @@ public class FinanceService {
             demande.setVendeur(vendeurInfo);
 
             demandes.add(demande);
-            totalAPayer = totalAPayer.add(vendeur.getSoldeEnAttente());
+            totalAPayer = totalAPayer.add(soldeDisponible);
         }
+
+        // Les demandes explicites du vendeur d'abord
+        demandes.sort((a, b) -> Boolean.compare(
+                Boolean.TRUE.equals(b.getaDemande()),
+                Boolean.TRUE.equals(a.getaDemande())));
 
         // 3. Construire la réponse
         AdminFinancesPaiementsPendingGet200Response response =

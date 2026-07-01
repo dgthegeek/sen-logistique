@@ -150,6 +150,14 @@ public interface LivraisonRepository extends JpaRepository<Livraison, Long> {
     @Query("SELECT COALESCE(SUM(l.montantCOD), 0) FROM Livraison l WHERE l.vendeur = :vendeur AND l.statut = 'LIVREE' AND l.dateLivraison BETWEEN :debut AND :fin")
     BigDecimal calculerCAVendeur(@Param("vendeur") Vendeur vendeur, @Param("debut") LocalDateTime debut, @Param("fin") LocalDateTime fin);
 
+    /**
+     * Chiffre d'affaires "produit" cumulé d'un vendeur : somme du prix produit
+     * (COD hors frais de livraison) de toutes ses livraisons livrées, sans borne de date.
+     * C'est la source unique du CA et de la base du solde disponible.
+     */
+    @Query("SELECT COALESCE(SUM(l.montantCOD - l.fraisLivraison), 0) FROM Livraison l WHERE l.vendeur = :vendeur AND l.statut = 'LIVREE'")
+    BigDecimal sumProduitLivrees(@Param("vendeur") Vendeur vendeur);
+
     // ==================== RECHERCHES AVANCÉES ====================
 
     /**

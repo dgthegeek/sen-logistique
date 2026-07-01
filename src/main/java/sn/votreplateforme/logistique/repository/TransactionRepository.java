@@ -69,6 +69,20 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
     @Query("SELECT COALESCE(SUM(t.montant), 0) FROM Transaction t WHERE t.type = 'PAIEMENT_VENDEUR' AND t.statut = 'EN_ATTENTE'")
     BigDecimal calculerMontantEnAttente();
 
+    /**
+     * Total effectivement payé à un vendeur (paiements EFFECTUE uniquement).
+     * Sert à calculer dynamiquement le solde disponible = CA livré - total payé.
+     */
+    @Query("SELECT COALESCE(SUM(t.montant), 0) FROM Transaction t WHERE t.vendeur = :vendeur AND t.type = 'PAIEMENT_VENDEUR' AND t.statut = 'EFFECTUE'")
+    BigDecimal sumPaiementsEffectues(@Param("vendeur") Vendeur vendeur);
+
+    /** Première (plus ancienne) demande de paiement d'un vendeur dans un statut donné. */
+    java.util.Optional<Transaction> findFirstByVendeurAndTypeAndStatutOrderByDateTransactionAsc(
+            Vendeur vendeur,
+            TypeTransaction type,
+            StatutPaiement statut
+    );
+
     // ==================== RECHERCHES AVANCÉES ====================
 
     @Query("SELECT t FROM Transaction t WHERE " +

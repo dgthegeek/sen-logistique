@@ -31,6 +31,7 @@ public class VendeurService {
     private final LivraisonRepository livraisonRepository;
     private final TransactionRepository transactionRepository;
     private final NotificationService notificationService;
+    private final FinanceCalculator financeCalculator;
 
     /**
      * Récupère le dashboard du vendeur avec statistiques du jour
@@ -66,8 +67,9 @@ public class VendeurService {
                 .count();
         int colisEnCours = Math.max(0, totalColis - colisLivres - colisTermines);
 
-        // Calcul du solde en attente
-        BigDecimal soldeEnAttente = calculerSoldeEnAttente(vendeur);
+        // Solde disponible + chiffre d'affaires cumulé (source unique : FinanceCalculator)
+        BigDecimal soldeEnAttente = financeCalculator.soldeDisponible(vendeur);
+        BigDecimal chiffreAffaires = financeCalculator.chiffreAffaires(vendeur);
 
         // Construire les statistiques du jour
         VendeurDashboardStatistiquesJour statsJour = new VendeurDashboardStatistiquesJour();
@@ -78,6 +80,7 @@ public class VendeurService {
         // Construire les finances
         VendeurDashboardFinances finances = new VendeurDashboardFinances();
         finances.setSoldeEnAttente(soldeEnAttente);
+        finances.setChiffreAffaires(chiffreAffaires);
         finances.setProchainPaiement("Sur demande");
 
         // Construire le dashboard
@@ -100,20 +103,24 @@ public class VendeurService {
 
         Vendeur vendeur = getCurrentVendeur();
 
-        // Solde en attente
-        BigDecimal soldeEnAttente = calculerSoldeEnAttente(vendeur);
+        // Solde disponible + chiffre d'affaires cumulé (source unique : FinanceCalculator)
+        BigDecimal soldeEnAttente = financeCalculator.soldeDisponible(vendeur);
+        BigDecimal chiffreAffaires = financeCalculator.chiffreAffaires(vendeur);
 
-        // Statistiques du mois en cours
+        // Statistiques du mois en cours : uniquement les livraisons LIVREE du mois
         LocalDateTime debutMois = LocalDate.now().withDayOfMonth(1).atStartOfDay();
         LocalDateTime finMois = debutMois.plusMonths(1);
 
         List<Livraison> livraisonsMois = livraisonRepository
-                .findByVendeurAndDateCreationBetween(vendeur, debutMois, finMois);
+                .findByVendeurAndDateCreationBetween(vendeur, debutMois, finMois).stream()
+                .filter(l -> l.getStatut() == StatutLivraison.LIVREE)
+                .collect(Collectors.toList());
 
         int nombreLivraisons = livraisonsMois.size();
 
+        // CA du mois = prix produit (COD - frais) des livraisons livrées du mois
         BigDecimal caGenere = livraisonsMois.stream()
-                .map(Livraison::getMontantCOD)
+                .map(l -> l.getMontantCOD().subtract(l.getFraisLivraison()))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         BigDecimal fraisLivraison = livraisonsMois.stream()
@@ -141,6 +148,7 @@ public class VendeurService {
         // Construire la réponse
         VendeurFinances finances = new VendeurFinances();
         finances.setSoldeEnAttente(soldeEnAttente);
+        finances.setChiffreAffaires(chiffreAffaires);
         finances.setStatistiquesMois(statsMois);
         finances.setHistoriquePaiements(historique);
 
@@ -241,8 +249,8 @@ public class VendeurService {
 
         Vendeur vendeur = getCurrentVendeur();
 
-        // Calculer le solde en attente
-        BigDecimal soldeEnAttente = calculerSoldeEnAttente(vendeur);
+        // Calculer le solde disponible (source unique : FinanceCalculator)
+        BigDecimal soldeEnAttente = financeCalculator.soldeDisponible(vendeur);
 
         // Vérifier qu'il y a un solde à payer
         if (soldeEnAttente.compareTo(BigDecimal.ZERO) <= 0) {
@@ -304,34 +312,6 @@ public class VendeurService {
         String telephone = SecurityUtils.getCurrentUserTelephone();
         return vendeurRepository.findByTelephone(telephone)
                 .orElseThrow(() -> new IllegalStateException("Vendeur non trouvé"));
-    }
-
-    /**
-     * Calcule le solde en attente du vendeur
-     * = Somme des (montantCOD - fraisLivraison) pour les livraisons LIVREE non encore payées
-     */
-    private BigDecimal calculerSoldeEnAttente(Vendeur vendeur) {
-        // Récupérer toutes les livraisons livrées - CORRECTION ICI
-        List<Livraison> livraisonsLivrees = livraisonRepository
-                .findByVendeurAndStatut(vendeur, StatutLivraison.LIVREE);
-
-        // Récupérer tous les paiements déjà effectués
-        List<Transaction> paiements = transactionRepository
-                .findByVendeurAndTypeAndStatut(
-                        vendeur,
-                        Transaction.TypeTransaction.PAIEMENT_VENDEUR,
-                        Transaction.StatutPaiement.EFFECTUE
-                );
-
-        BigDecimal totalDu = livraisonsLivrees.stream()
-                .map(l -> l.getMontantCOD().subtract(l.getFraisLivraison()))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        BigDecimal totalPaye = paiements.stream()
-                .map(Transaction::getMontant)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        return totalDu.subtract(totalPaye);
     }
 
     /**
