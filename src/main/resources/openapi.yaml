@@ -337,6 +337,79 @@ paths:
           $ref: '#/components/responses/UnauthorizedError'
 
   # ============================================
+  # VENDEUR - BILAN
+  # ============================================
+  /vendeur/bilan:
+    get:
+      tags:
+        - Vendeur
+      operationId: vendeurBilan
+      summary: Bilan du vendeur (stock actuel + ventes sur la période)
+      description: >-
+        Pour chaque produit du partenaire connecté : stock actuel chez Dioks et
+        quantité vendue (livraisons livrées) sur la période. Période par défaut = aujourd'hui.
+      parameters:
+        - name: debut
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: fin
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Bilan du vendeur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BilanVendeur'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - bearerAuth: [ ]
+
+  /vendeur/bilan/pdf:
+    get:
+      tags:
+        - Vendeur
+      operationId: vendeurBilanPdf
+      summary: Télécharger le bilan du vendeur en PDF
+      parameters:
+        - name: debut
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: fin
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: PDF du bilan
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - bearerAuth: [ ]
+
+  # ============================================
   # ADMIN - RAMASSAGES
   # ============================================
   /admin/ramassages:
@@ -943,6 +1016,89 @@ paths:
           $ref: '#/components/responses/UnauthorizedError'
         '403':
           $ref: '#/components/responses/ForbiddenError'
+
+  /admin/vendeurs/{id}/bilan:
+    get:
+      tags:
+        - Admin - Vendeurs
+      operationId: adminVendeurBilan
+      summary: Bilan d'un vendeur (stock actuel + ventes sur la période)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: debut
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: fin
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Bilan du vendeur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BilanVendeur'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - bearerAuth: [ ]
+
+  /admin/vendeurs/{id}/bilan/pdf:
+    get:
+      tags:
+        - Admin - Vendeurs
+      operationId: adminVendeurBilanPdf
+      summary: Télécharger le bilan d'un vendeur en PDF
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: debut
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: fin
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: PDF du bilan
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - bearerAuth: [ ]
 
   # ============================================
   # ADMIN - FINANCES
@@ -3254,6 +3410,80 @@ components:
               type: string
               description: "Ã€ la demande du vendeur"
               example: "Sur demande"
+
+    BilanVendeurLigne:
+      type: object
+      properties:
+        produitId:
+          type: integer
+          format: int64
+        code:
+          type: string
+          example: "DKS-00001"
+        nom:
+          type: string
+          example: "Chemise en lin"
+        prixUnitaire:
+          type: number
+          format: decimal
+          example: 15000
+        stockActuel:
+          type: integer
+          example: 42
+        quantiteVendue:
+          type: integer
+          example: 3
+        montantVentes:
+          type: number
+          format: decimal
+          example: 45000
+        enAlerte:
+          type: boolean
+          example: false
+
+    BilanVendeur:
+      type: object
+      properties:
+        vendeur:
+          type: object
+          properties:
+            id:
+              type: integer
+              format: int64
+            nom:
+              type: string
+            prenom:
+              type: string
+            nomBoutique:
+              type: string
+            telephone:
+              type: string
+        periodeDebut:
+          type: string
+          format: date
+        periodeFin:
+          type: string
+          format: date
+        genereLe:
+          type: string
+          format: date-time
+        lignes:
+          type: array
+          items:
+            $ref: '#/components/schemas/BilanVendeurLigne'
+        nombreProduits:
+          type: integer
+          example: 8
+        totalStock:
+          type: integer
+          example: 120
+        totalQuantiteVendue:
+          type: integer
+          example: 11
+        totalMontantVentes:
+          type: number
+          format: decimal
+          example: 185000
 
     VendeurFinances:
       type: object

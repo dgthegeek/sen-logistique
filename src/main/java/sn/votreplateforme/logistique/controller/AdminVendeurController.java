@@ -6,7 +6,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 import sn.votreplateforme.logistique.api.AdminVendeursApi;
 import sn.votreplateforme.logistique.dto.*;
+import sn.votreplateforme.logistique.service.BilanVendeurPdfService;
+import sn.votreplateforme.logistique.service.BilanVendeurService;
 import sn.votreplateforme.logistique.service.VendeurAdminService;
+
+import java.time.LocalDate;
 
 /**
  * Controller Admin Vendeurs - Gestion et validation des vendeurs
@@ -28,6 +32,8 @@ import sn.votreplateforme.logistique.service.VendeurAdminService;
 public class AdminVendeurController implements AdminVendeursApi {
 
     private final VendeurAdminService vendeurAdminService;
+    private final BilanVendeurService bilanVendeurService;
+    private final BilanVendeurPdfService bilanVendeurPdfService;
 
     /**
      * GET /admin/vendeurs/en-attente
@@ -162,5 +168,35 @@ public class AdminVendeurController implements AdminVendeursApi {
         log.info("✅ Vendeur {} réactivé", id);
 
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * GET /admin/vendeurs/{id}/bilan
+     */
+    @Override
+    public ResponseEntity<BilanVendeur> adminVendeurBilan(Long id, LocalDate debut, LocalDate fin) {
+        log.info("📊 Bilan vendeur {} ({} → {})", id, debut, fin);
+        return ResponseEntity.ok(bilanVendeurService.getBilanVendeur(id, debut, fin));
+    }
+
+    /**
+     * GET /admin/vendeurs/{id}/bilan/pdf
+     */
+    @Override
+    public ResponseEntity<org.springframework.core.io.Resource> adminVendeurBilanPdf(
+            Long id, LocalDate debut, LocalDate fin) {
+        BilanVendeur bilan = bilanVendeurService.getBilanVendeur(id, debut, fin);
+        byte[] pdf = bilanVendeurPdfService.generer(bilan);
+        String boutique = bilan.getVendeur() != null && bilan.getVendeur().getNomBoutique() != null
+                ? bilan.getVendeur().getNomBoutique().replaceAll("[^a-zA-Z0-9-_]", "_")
+                : "vendeur";
+        String filename = String.format("bilan-%s-%s.pdf", boutique, bilan.getPeriodeDebut());
+
+        org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+        headers.setContentType(org.springframework.http.MediaType.APPLICATION_PDF);
+        headers.setContentDispositionFormData("attachment", filename);
+        headers.setContentLength(pdf.length);
+        return ResponseEntity.ok().headers(headers)
+                .body(new org.springframework.core.io.ByteArrayResource(pdf));
     }
 }

@@ -12,10 +12,13 @@ import sn.votreplateforme.logistique.dto.*;
 import sn.votreplateforme.logistique.entity.Vendeur;
 import sn.votreplateforme.logistique.exception.ForbiddenException;
 import sn.votreplateforme.logistique.repository.VendeurRepository;
+import sn.votreplateforme.logistique.service.BilanVendeurPdfService;
+import sn.votreplateforme.logistique.service.BilanVendeurService;
 import sn.votreplateforme.logistique.service.LivraisonService;
 import sn.votreplateforme.logistique.service.StockService;
 import sn.votreplateforme.logistique.service.VendeurService;
 
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -39,6 +42,8 @@ public class VendeurController implements VendeurApi {
     private final VendeurService vendeurService;
     private final VendeurRepository vendeurRepository;
     private final StockService stockService;
+    private final BilanVendeurService bilanVendeurService;
+    private final BilanVendeurPdfService bilanVendeurPdfService;
 
     /**
      * GET /vendeur/produits
@@ -246,6 +251,43 @@ public class VendeurController implements VendeurApi {
             log.error("❌ Erreur lors de la récupération des finances", e);
             throw new RuntimeException("Erreur lors de la récupération des finances: " + e.getMessage());
         }
+    }
+
+    /**
+     * GET /vendeur/bilan
+     * Bilan du vendeur : stock actuel + ventes sur la période (défaut = aujourd'hui).
+     */
+    @Override
+    public ResponseEntity<BilanVendeur> vendeurBilan(LocalDate debut, LocalDate fin) {
+        verifierVendeurActif();
+        return ResponseEntity.ok(bilanVendeurService.getBilanVendeurConnecte(debut, fin));
+    }
+
+    /**
+     * GET /vendeur/bilan/pdf
+     * Télécharge le bilan du vendeur en PDF.
+     */
+    @Override
+    public ResponseEntity<org.springframework.core.io.Resource> vendeurBilanPdf(LocalDate debut, LocalDate fin) {
+        verifierVendeurActif();
+        BilanVendeur bilan = bilanVendeurService.getBilanVendeurConnecte(debut, fin);
+        return construirePdf(bilan);
+    }
+
+    /** Construit la réponse HTTP de téléchargement du PDF du bilan. */
+    private ResponseEntity<org.springframework.core.io.Resource> construirePdf(BilanVendeur bilan) {
+        byte[] pdf = bilanVendeurPdfService.generer(bilan);
+        String boutique = bilan.getVendeur() != null && bilan.getVendeur().getNomBoutique() != null
+                ? bilan.getVendeur().getNomBoutique().replaceAll("[^a-zA-Z0-9-_]", "_")
+                : "vendeur";
+        String filename = String.format("bilan-%s-%s.pdf", boutique, bilan.getPeriodeDebut());
+
+        org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+        headers.setContentType(org.springframework.http.MediaType.APPLICATION_PDF);
+        headers.setContentDispositionFormData("attachment", filename);
+        headers.setContentLength(pdf.length);
+        return ResponseEntity.ok().headers(headers)
+                .body(new org.springframework.core.io.ByteArrayResource(pdf));
     }
 
     // ===== MÉTHODE PRIVÉE DE VÉRIFICATION =====
