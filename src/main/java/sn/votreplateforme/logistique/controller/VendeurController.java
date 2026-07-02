@@ -44,6 +44,7 @@ public class VendeurController implements VendeurApi {
     private final StockService stockService;
     private final BilanVendeurService bilanVendeurService;
     private final BilanVendeurPdfService bilanVendeurPdfService;
+    private final sn.votreplateforme.logistique.service.ClassementService classementService;
 
     /**
      * GET /vendeur/produits
@@ -288,6 +289,26 @@ public class VendeurController implements VendeurApi {
         headers.setContentLength(pdf.length);
         return ResponseEntity.ok().headers(headers)
                 .body(new org.springframework.core.io.ByteArrayResource(pdf));
+    }
+
+    // ===== DIOKS LEAGUE (classement) =====
+
+    @Override
+    public ResponseEntity<ClassementResponse> vendeurClassement() {
+        verifierVendeurActif();
+        return ResponseEntity.ok(classementService.getClassementVendeur());
+    }
+
+    @Override
+    public ResponseEntity<ClassementResponse> vendeurClassementRejoindre() {
+        verifierVendeurActif();
+        return ResponseEntity.ok(classementService.rejoindre());
+    }
+
+    @Override
+    public ResponseEntity<ClassementResponse> vendeurClassementQuitter() {
+        verifierVendeurActif();
+        return ResponseEntity.ok(classementService.quitter());
     }
 
     // ===== MÉTHODE PRIVÉE DE VÉRIFICATION =====

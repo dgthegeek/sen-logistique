@@ -110,6 +110,18 @@ public class Vendeur extends User {
     @Column(name = "raison_suspension", columnDefinition = "TEXT")
     private String raisonSuspension;
 
+    /**
+     * Participation à la Dioks League (classement gamifié entre vendeurs).
+     * Opt-in : tant que false, le vendeur n'apparaît pas dans le classement des autres.
+     * Les stats étant calculées sur les livraisons réelles, quitter/revenir ne remet rien à zéro.
+     */
+    @Column(name = "participe_classement", nullable = false)
+    @Builder.Default
+    private boolean participeClassement = false;
+
+    @Column(name = "date_adhesion_classement")
+    private LocalDateTime dateAdhesionClassement;
+
     // ==================== MÉTHODES UTILITAIRES ====================
 
     /**

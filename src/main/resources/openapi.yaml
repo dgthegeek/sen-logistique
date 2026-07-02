@@ -410,6 +410,83 @@ paths:
         - bearerAuth: [ ]
 
   # ============================================
+  # VENDEUR - DIOKS LEAGUE (classement gamifié)
+  # ============================================
+  /vendeur/classement:
+    get:
+      tags:
+        - Vendeur
+      operationId: vendeurClassement
+      summary: Classement Dioks League (visible si le vendeur participe)
+      responses:
+        '200':
+          description: Classement
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassementResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+      security:
+        - bearerAuth: [ ]
+
+  /vendeur/classement/rejoindre:
+    post:
+      tags:
+        - Vendeur
+      operationId: vendeurClassementRejoindre
+      summary: Rejoindre la Dioks League (opt-in, partage des stats)
+      responses:
+        '200':
+          description: Classement après adhésion
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassementResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+      security:
+        - bearerAuth: [ ]
+
+  /vendeur/classement/quitter:
+    post:
+      tags:
+        - Vendeur
+      operationId: vendeurClassementQuitter
+      summary: Quitter la Dioks League (les données ne sont pas perdues)
+      responses:
+        '200':
+          description: Classement après départ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassementResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+      security:
+        - bearerAuth: [ ]
+
+  /admin/classement:
+    get:
+      tags:
+        - Admin - Vendeurs
+      operationId: adminClassement
+      summary: Classement complet (tous les vendeurs) pour l'admin
+      responses:
+        '200':
+          description: Classement complet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassementResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - bearerAuth: [ ]
+
+  # ============================================
   # ADMIN - RAMASSAGES
   # ============================================
   /admin/ramassages:
@@ -3484,6 +3561,76 @@ components:
           type: number
           format: decimal
           example: 185000
+
+    ClassementEntry:
+      type: object
+      properties:
+        vendeurId:
+          type: integer
+          format: int64
+        rang:
+          type: integer
+          example: 3
+        nomAffiche:
+          type: string
+          example: "Boutique Awa"
+        nombreLivraisons:
+          type: integer
+          example: 128
+        chiffreAffaires:
+          type: number
+          format: decimal
+          example: 1850000
+        tier:
+          type: string
+          enum: [BRONZE, ARGENT, OR, PLATINE, DIAMANT, LEGENDE]
+        moi:
+          type: boolean
+          description: "true si c'est le vendeur connecté"
+        participe:
+          type: boolean
+          description: "Participe à la ligue (utile côté admin)"
+
+    ClassementResponse:
+      type: object
+      properties:
+        participe:
+          type: boolean
+          description: "Le vendeur connecté participe-t-il à la ligue"
+        totalParticipants:
+          type: integer
+          example: 24
+        monRang:
+          type: integer
+          nullable: true
+          example: 3
+        monTier:
+          type: string
+          enum: [BRONZE, ARGENT, OR, PLATINE, DIAMANT, LEGENDE]
+          nullable: true
+        mesLivraisons:
+          type: integer
+          example: 128
+        monChiffreAffaires:
+          type: number
+          format: decimal
+          example: 1850000
+        prochainTier:
+          type: string
+          nullable: true
+          enum: [BRONZE, ARGENT, OR, PLATINE, DIAMANT, LEGENDE]
+        livraisonsPourProchainTier:
+          type: integer
+          nullable: true
+          example: 22
+        progressionPourcent:
+          type: integer
+          description: "Progression vers le prochain tier (0-100)"
+          example: 78
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClassementEntry'
 
     VendeurFinances:
       type: object

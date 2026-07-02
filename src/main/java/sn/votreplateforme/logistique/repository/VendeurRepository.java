@@ -23,6 +23,9 @@ public interface VendeurRepository extends JpaRepository<Vendeur, Long> {
 
     List<Vendeur> findByStatut(StatutVendeur statut);
 
+    /** Vendeurs participant à la Dioks League (classement). */
+    List<Vendeur> findByParticipeClassementTrue();
+
     /** Total dû aux partenaires (somme des soldes en attente). */
     @Query("SELECT COALESCE(SUM(v.soldeEnAttente), 0) FROM Vendeur v")
     BigDecimal sumSoldeEnAttente();

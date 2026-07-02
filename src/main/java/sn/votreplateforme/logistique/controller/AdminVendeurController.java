@@ -34,6 +34,7 @@ public class AdminVendeurController implements AdminVendeursApi {
     private final VendeurAdminService vendeurAdminService;
     private final BilanVendeurService bilanVendeurService;
     private final BilanVendeurPdfService bilanVendeurPdfService;
+    private final sn.votreplateforme.logistique.service.ClassementService classementService;
 
     /**
      * GET /admin/vendeurs/en-attente
@@ -198,5 +199,13 @@ public class AdminVendeurController implements AdminVendeursApi {
         headers.setContentLength(pdf.length);
         return ResponseEntity.ok().headers(headers)
                 .body(new org.springframework.core.io.ByteArrayResource(pdf));
+    }
+
+    /**
+     * GET /admin/classement - Dioks League complète (tous les vendeurs)
+     */
+    @Override
+    public ResponseEntity<ClassementResponse> adminClassement() {
+        return ResponseEntity.ok(classementService.getClassementAdmin());
     }
 }

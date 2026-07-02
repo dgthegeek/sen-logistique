@@ -158,6 +158,14 @@ public interface LivraisonRepository extends JpaRepository<Livraison, Long> {
     @Query("SELECT COALESCE(SUM(l.montantCOD - l.fraisLivraison), 0) FROM Livraison l WHERE l.vendeur = :vendeur AND l.statut = 'LIVREE'")
     BigDecimal sumProduitLivrees(@Param("vendeur") Vendeur vendeur);
 
+    /**
+     * Statistiques de livraisons livrées agrégées par vendeur (Dioks League).
+     * Retourne [vendeurId (Long), nombreLivraisons (Long), chiffreAffaires (BigDecimal)].
+     */
+    @Query("SELECT l.vendeur.id, COUNT(l), COALESCE(SUM(l.montantCOD - l.fraisLivraison), 0) " +
+            "FROM Livraison l WHERE l.statut = 'LIVREE' GROUP BY l.vendeur.id")
+    List<Object[]> statsLivreesParVendeur();
+
     // ==================== RECHERCHES AVANCÉES ====================
 
     /**
