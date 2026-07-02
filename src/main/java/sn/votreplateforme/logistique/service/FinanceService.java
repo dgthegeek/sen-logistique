@@ -69,9 +69,10 @@ public class FinanceService {
                 .filter(s -> s.compareTo(BigDecimal.ZERO) > 0)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        // 5. Calculer les commissions (40% des frais de livraison)
+        // 5. Commission plateforme = l'intégralité des frais de livraison des commandes livrées.
+        //    Pour chaque livraison, la plateforme gagne le prix de la livraison.
         BigDecimal commissions = livraisonsLivrees.stream()
-                .map(l -> l.getFraisLivraison().multiply(new BigDecimal("0.40")))
+                .map(l -> l.getFraisLivraison() != null ? l.getFraisLivraison() : BigDecimal.ZERO)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         // 6. Calculer les statistiques

@@ -12,5 +12,10 @@ public enum UserRole {
      * Livreur : exécute uniquement les livraisons qui lui sont assignées (module Dispatch).
      * Ne voit que "Mes livraisons".
      */
-    LIVREUR
+    LIVREUR,
+    /**
+     * Dispatcheur : prépare les commandes "Prête à livrer" à l'entrepôt et les assigne
+     * à un livreur (module Dispatch). Ne voit que l'écran de dispatch.
+     */
+    DISPATCHEUR
 }

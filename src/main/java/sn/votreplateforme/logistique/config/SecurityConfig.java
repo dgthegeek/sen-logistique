@@ -98,6 +98,11 @@ public class SecurityConfig {
                 // Interface livreur - chaque livreur ne voit que ses livraisons
                 .requestMatchers("/livreur/**").hasRole("LIVREUR")
 
+                // ==================== ENDPOINTS DISPATCHEUR ====================
+
+                // Module Dispatch - dispatcheur (l'admin garde un droit de supervision)
+                .requestMatchers("/dispatch/**").hasAnyRole("DISPATCHEUR", "ADMIN")
+
                 // ==================== ENDPOINTS ADMIN ====================
 
                 // Endpoints admin - Nécessite rôle ADMIN

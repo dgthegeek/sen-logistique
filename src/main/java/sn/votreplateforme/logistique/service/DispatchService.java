@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 import sn.votreplateforme.logistique.dto.AssignerLivreurRequest;
 import sn.votreplateforme.logistique.dto.CommandeDispatch;
 import sn.votreplateforme.logistique.dto.DispatchAssigner200Response;
+import sn.votreplateforme.logistique.dto.LivreurResponse;
 import sn.votreplateforme.logistique.entity.Livraison;
 import sn.votreplateforme.logistique.entity.Livreur;
 import sn.votreplateforme.logistique.entity.StatutLivraison;
@@ -41,6 +42,31 @@ public class DispatchService {
                 .collect(Collectors.toList());
         log.info("Dispatch : {} commande(s) prête(s) à livrer", commandes.size());
         return commandes;
+    }
+
+    /** Livreurs actifs, pour peupler la liste d'assignation (dispatcheur / admin). */
+    @Transactional(readOnly = true)
+    public List<LivreurResponse> getLivreursActifs() {
+        return livreurRepository.findAll().stream()
+                .filter(Livreur::isActif)
+                .map(this::mapToLivreurResponse)
+                .collect(Collectors.toList());
+    }
+
+    private LivreurResponse mapToLivreurResponse(Livreur l) {
+        LivreurResponse r = new LivreurResponse();
+        r.setId(l.getId());
+        r.setNom(l.getNom());
+        r.setPrenom(l.getPrenom());
+        r.setTelephone(l.getTelephone());
+        r.setEmail(l.getEmail());
+        r.setZonePreferee(l.getZonePreferee());
+        r.setActif(l.isActif());
+        r.setNombreLivraisonsEnCours(
+                (int) livraisonRepository.countByLivreur_IdAndStatutIn(
+                        l.getId(),
+                        List.of(StatutLivraison.ASSIGNEE, StatutLivraison.EN_LIVRAISON)));
+        return r;
     }
 
     @Transactional

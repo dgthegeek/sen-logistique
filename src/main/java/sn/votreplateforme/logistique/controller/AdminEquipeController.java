@@ -53,4 +53,19 @@ public class AdminEquipeController implements AdminEquipeApi {
     public ResponseEntity<LivreurResponse> updateLivreur(Long id, UpdateMembreRequest updateMembreRequest) {
         return ResponseEntity.ok(equipeService.updateLivreur(id, updateMembreRequest));
     }
+
+    @Override
+    public ResponseEntity<MembreResponse> createDispatcheur(CreateMembreRequest createMembreRequest) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(equipeService.createDispatcheur(createMembreRequest));
+    }
+
+    @Override
+    public ResponseEntity<List<MembreResponse>> listDispatcheurs() {
+        return ResponseEntity.ok(equipeService.listDispatcheurs());
+    }
+
+    @Override
+    public ResponseEntity<MembreResponse> updateDispatcheur(Long id, UpdateMembreRequest updateMembreRequest) {
+        return ResponseEntity.ok(equipeService.updateDispatcheur(id, updateMembreRequest));
+    }
 }

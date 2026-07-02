@@ -36,6 +36,7 @@ public class EquipeService {
 
     private final CloseurRepository closeurRepository;
     private final LivreurRepository livreurRepository;
+    private final sn.votreplateforme.logistique.repository.DispatcheurRepository dispatcheurRepository;
     private final UserRepository userRepository;
     private final LivraisonRepository livraisonRepository;
     private final PasswordEncoder passwordEncoder;
@@ -74,6 +75,43 @@ public class EquipeService {
                         "Closeur non trouvé: " + id));
         appliquerModifs(closeur, request);
         return mapToMembreResponse(closeurRepository.save(closeur), UserRole.CLOSEUR);
+    }
+
+    // ==================== DISPATCHEURS ====================
+
+    @Transactional
+    public MembreResponse createDispatcheur(CreateMembreRequest request) {
+        verifierUnicite(request);
+
+        sn.votreplateforme.logistique.entity.Dispatcheur dispatcheur =
+                new sn.votreplateforme.logistique.entity.Dispatcheur();
+        dispatcheur.setNom(request.getNom());
+        dispatcheur.setPrenom(request.getPrenom());
+        dispatcheur.setTelephone(request.getTelephone());
+        dispatcheur.setEmail(request.getEmail());
+        dispatcheur.setPassword(passwordEncoder.encode(request.getPassword()));
+        dispatcheur.setRole(UserRole.DISPATCHEUR);
+        dispatcheur.setActif(true);
+
+        dispatcheur = dispatcheurRepository.save(dispatcheur);
+        log.info("Dispatcheur créé: {} (ID: {})", dispatcheur.getTelephone(), dispatcheur.getId());
+        return mapToMembreResponse(dispatcheur, UserRole.DISPATCHEUR);
+    }
+
+    @Transactional(readOnly = true)
+    public List<MembreResponse> listDispatcheurs() {
+        return dispatcheurRepository.findAll().stream()
+                .map(d -> mapToMembreResponse(d, UserRole.DISPATCHEUR))
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public MembreResponse updateDispatcheur(Long id, sn.votreplateforme.logistique.dto.UpdateMembreRequest request) {
+        sn.votreplateforme.logistique.entity.Dispatcheur dispatcheur = dispatcheurRepository.findById(id)
+                .orElseThrow(() -> new sn.votreplateforme.logistique.exception.ResourceNotFoundException(
+                        "Dispatcheur non trouvé: " + id));
+        appliquerModifs(dispatcheur, request);
+        return mapToMembreResponse(dispatcheurRepository.save(dispatcheur), UserRole.DISPATCHEUR);
     }
 
     // ==================== LIVREURS ====================

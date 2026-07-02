@@ -44,10 +44,10 @@ tags:
     description: Gestion des zones et quartiers
   - name: Closeur
     description: Module Closing - confirmation des commandes par le closeur/assistante
-  - name: Admin - Dispatch
-    description: Attribution des commandes prêtes aux livreurs
+  - name: Dispatch
+    description: Attribution des commandes prêtes aux livreurs (dispatcheur / admin)
   - name: Admin - Equipe
-    description: Gestion des comptes closeurs et livreurs
+    description: Gestion des comptes closeurs, livreurs et dispatcheurs
   - name: Livreur
     description: Interface livreur - mes livraisons assignées
   - name: Admin - Stats
@@ -1972,13 +1972,13 @@ paths:
   # ============================================
   # ADMIN - DISPATCH
   # ============================================
-  /admin/dispatch/pretes:
+  /dispatch/pretes:
     get:
       tags:
-        - Admin - Dispatch
+        - Dispatch
       operationId: dispatchPretes
       summary: Commandes prêtes à livrer (à assigner)
-      description: Liste les commandes au statut PRETE_A_LIVRER pour attribution à un livreur
+      description: Liste les commandes au statut PRETE_A_LIVRER pour attribution à un livreur (dispatcheur ou admin)
       responses:
         '200':
           description: Commandes prêtes à livrer
@@ -1995,10 +1995,33 @@ paths:
       security:
         - bearerAuth: [ ]
 
-  /admin/dispatch/assigner:
+  /dispatch/livreurs:
+    get:
+      tags:
+        - Dispatch
+      operationId: dispatchLivreurs
+      summary: Livreurs disponibles pour l'assignation
+      description: Liste des livreurs actifs, pour le dispatcheur (ou l'admin) lors de l'assignation
+      responses:
+        '200':
+          description: Livreurs actifs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LivreurResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - bearerAuth: [ ]
+
+  /dispatch/assigner:
     post:
       tags:
-        - Admin - Dispatch
+        - Dispatch
       operationId: dispatchAssigner
       summary: Assigner des commandes à un livreur
       requestBody:
@@ -2192,6 +2215,88 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LivreurResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - bearerAuth: [ ]
+
+  /admin/dispatcheurs:
+    get:
+      tags:
+        - Admin - Equipe
+      operationId: listDispatcheurs
+      summary: Lister les dispatcheurs
+      responses:
+        '200':
+          description: Liste des dispatcheurs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MembreResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - bearerAuth: [ ]
+    post:
+      tags:
+        - Admin - Equipe
+      operationId: createDispatcheur
+      summary: Créer un compte dispatcheur
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMembreRequest'
+      responses:
+        '201':
+          description: Dispatcheur créé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembreResponse'
+        '400':
+          description: Requête invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - bearerAuth: [ ]
+
+  /admin/dispatcheurs/{id}:
+    put:
+      tags:
+        - Admin - Equipe
+      operationId: updateDispatcheur
+      summary: Modifier un dispatcheur
+      parameters:
+        - $ref: '#/components/parameters/MembreIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMembreRequest'
+      responses:
+        '200':
+          description: Dispatcheur mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembreResponse'
         '404':
           $ref: '#/components/responses/NotFoundError'
         '401':
@@ -3661,6 +3766,7 @@ components:
         - ADMIN
         - CLOSEUR
         - LIVREUR
+        - DISPATCHEUR
 
     StatutLivraison:
       type: string
@@ -4496,7 +4602,7 @@ components:
           example: "fatou@example.com"
         role:
           type: string
-          enum: [ VENDEUR, ADMIN, CLOSEUR, LIVREUR ]
+          enum: [ VENDEUR, ADMIN, CLOSEUR, LIVREUR, DISPATCHEUR ]
         dateInscription:
           type: string
           format: date-time
