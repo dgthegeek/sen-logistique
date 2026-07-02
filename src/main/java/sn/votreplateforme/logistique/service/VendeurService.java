@@ -235,6 +235,17 @@ public class VendeurService {
                 livraison.getUrgence().name()));
         detail.setCommentaireLivraison(livraison.getCommentaireLivraison());
 
+        // Livreur assigné (module Dispatch) - null tant que la commande n'est pas assignée
+        if (livraison.getLivreur() != null) {
+            var l = livraison.getLivreur();
+            LivraisonDetailResponseLivreur livreurInfo = new LivraisonDetailResponseLivreur();
+            livreurInfo.setId(l.getId());
+            livreurInfo.setNom(l.getNom());
+            livreurInfo.setPrenom(l.getPrenom());
+            livreurInfo.setTelephone(l.getTelephone());
+            detail.setLivreur(livreurInfo);
+        }
+
         log.info("✅ Détails livraison {} récupérés", livraison.getNumeroTracking());
 
         return detail;
