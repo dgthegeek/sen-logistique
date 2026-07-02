@@ -92,16 +92,21 @@ public class ClosingService {
         return mapToCommandeCloseur(livraisonRepository.save(l));
     }
 
+    /**
+     * "Relancer" : la commande retourne dans la file en tant que NOUVELLE,
+     * redevenant disponible pour prise en charge par n'importe quel closeur.
+     */
     @Transactional
     public CommandeCloseur reporter(Long id, CommentaireRequest request) {
         Livraison l = getCommande(id);
         if (l.estTerminee() || l.getStatut() == StatutLivraison.PRETE_A_LIVRER) {
-            throw new BusinessException("Cette commande ne peut plus être reportée");
+            throw new BusinessException("Cette commande ne peut plus être relancée");
         }
-        l.setStatut(StatutLivraison.A_APPELER);
+        l.setStatut(StatutLivraison.NOUVELLE);
         if (request != null && request.getCommentaire() != null) {
             l.setCommentaireLivraison(request.getCommentaire());
         }
+        log.info("Commande {} relancée : de nouveau disponible pour prise en charge", l.getNumeroTracking());
         return mapToCommandeCloseur(livraisonRepository.save(l));
     }
 
