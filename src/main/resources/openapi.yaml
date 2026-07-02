@@ -3602,12 +3602,10 @@ components:
           example: 24
         monRang:
           type: integer
-          nullable: true
           example: 3
         monTier:
           type: string
           enum: [BRONZE, ARGENT, OR, PLATINE, DIAMANT, LEGENDE]
-          nullable: true
         mesLivraisons:
           type: integer
           example: 128
@@ -3617,11 +3615,9 @@ components:
           example: 1850000
         prochainTier:
           type: string
-          nullable: true
           enum: [BRONZE, ARGENT, OR, PLATINE, DIAMANT, LEGENDE]
         livraisonsPourProchainTier:
           type: integer
-          nullable: true
           example: 22
         progressionPourcent:
           type: integer
