@@ -200,6 +200,7 @@ public class Livraison {
     /**
      * Date de prise en charge par le closeur (première action : appel/confirmation).
      */
+    @Column(name = "date_prise_en_charge")
     private LocalDateTime datePriseEnCharge;
 
     /**
@@ -209,7 +210,10 @@ public class Livraison {
 
     /**
      * Date à laquelle la commande est devenue "prête à livrer" (fin du closing).
+     * Colonne fixée explicitement : la stratégie de nommage produirait sinon
+     * "date_pretealivrer" (le A isolé suivi de L n'ajoute pas d'underscore).
      */
+    @Column(name = "date_prete_a_livrer")
     private LocalDateTime datePreteALivrer;
 
     /**
