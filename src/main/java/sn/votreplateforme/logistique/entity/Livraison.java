@@ -184,9 +184,33 @@ public class Livraison {
     private Livreur livreur;
 
     /**
+     * Closeur qui a pris la commande en charge (traçabilité qualité).
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "closeur_id")
+    private Closeur closeur;
+
+    /**
+     * Dispatcheur qui a assigné la commande à un livreur (traçabilité qualité).
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "dispatcheur_id")
+    private Dispatcheur dispatcheur;
+
+    /**
+     * Date de prise en charge par le closeur (première action : appel/confirmation).
+     */
+    private LocalDateTime datePriseEnCharge;
+
+    /**
      * Date de confirmation par le closeur (passage à CONFIRMEE).
      */
     private LocalDateTime dateConfirmation;
+
+    /**
+     * Date à laquelle la commande est devenue "prête à livrer" (fin du closing).
+     */
+    private LocalDateTime datePreteALivrer;
 
     /**
      * Date d'assignation à un livreur (passage à ASSIGNEE).
@@ -316,6 +340,9 @@ public class Livraison {
      */
     public void marquerAAppeler() {
         this.statut = StatutLivraison.A_APPELER;
+        if (this.datePriseEnCharge == null) {
+            this.datePriseEnCharge = LocalDateTime.now();
+        }
     }
 
     /**
@@ -324,6 +351,9 @@ public class Livraison {
     public void marquerConfirmee() {
         this.statut = StatutLivraison.CONFIRMEE;
         this.dateConfirmation = LocalDateTime.now();
+        if (this.datePriseEnCharge == null) {
+            this.datePriseEnCharge = LocalDateTime.now();
+        }
     }
 
     /**
@@ -331,6 +361,7 @@ public class Livraison {
      */
     public void marquerPreteALivrer() {
         this.statut = StatutLivraison.PRETE_A_LIVRER;
+        this.datePreteALivrer = LocalDateTime.now();
     }
 
     /**

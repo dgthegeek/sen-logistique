@@ -11,10 +11,13 @@ import sn.votreplateforme.logistique.dto.LivreurResponse;
 import sn.votreplateforme.logistique.entity.Livraison;
 import sn.votreplateforme.logistique.entity.Livreur;
 import sn.votreplateforme.logistique.entity.StatutLivraison;
+import sn.votreplateforme.logistique.entity.Dispatcheur;
 import sn.votreplateforme.logistique.exception.BusinessException;
 import sn.votreplateforme.logistique.exception.ResourceNotFoundException;
+import sn.votreplateforme.logistique.repository.DispatcheurRepository;
 import sn.votreplateforme.logistique.repository.LivraisonRepository;
 import sn.votreplateforme.logistique.repository.LivreurRepository;
+import sn.votreplateforme.logistique.security.SecurityUtils;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -32,6 +35,12 @@ public class DispatchService {
 
     private final LivraisonRepository livraisonRepository;
     private final LivreurRepository livreurRepository;
+    private final DispatcheurRepository dispatcheurRepository;
+
+    /** Dispatcheur connecté (vide si l'action est faite par un admin). */
+    private Dispatcheur currentDispatcheur() {
+        return dispatcheurRepository.findByTelephone(SecurityUtils.getCurrentUserTelephone()).orElse(null);
+    }
 
     @Transactional(readOnly = true)
     public List<CommandeDispatch> getPretes() {
@@ -83,6 +92,8 @@ public class DispatchService {
             throw new BusinessException("Ce livreur est désactivé");
         }
 
+        Dispatcheur dispatcheur = currentDispatcheur();
+
         int assignees = 0;
         for (Long id : request.getLivraisonIds()) {
             Livraison l = livraisonRepository.findById(id)
@@ -95,6 +106,7 @@ public class DispatchService {
             }
 
             l.assignerLivreur(livreur);
+            l.setDispatcheur(dispatcheur);
             livraisonRepository.save(l);
             assignees++;
         }

@@ -246,6 +246,9 @@ public class VendeurService {
             detail.setLivreur(livreurInfo);
         }
 
+        // Traçabilité qualité (acteurs, horodatage, durées)
+        detail.setSuivi(construireSuivi(livraison));
+
         log.info("✅ Détails livraison {} récupérés", livraison.getNumeroTracking());
 
         return detail;
@@ -315,6 +318,53 @@ public class VendeurService {
         return response;
     }
     // ==================== MÉTHODES PRIVÉES ====================
+
+    /**
+     * Construit le bloc de traçabilité qualité (acteurs, horodatage, durées en minutes).
+     */
+    private LivraisonDetailResponseSuivi construireSuivi(Livraison l) {
+        LivraisonDetailResponseSuivi s = new LivraisonDetailResponseSuivi();
+
+        if (l.getCloseur() != null) {
+            LivraisonDetailResponseSuiviCloseur c = new LivraisonDetailResponseSuiviCloseur();
+            c.setNom(l.getCloseur().getNom());
+            c.setPrenom(l.getCloseur().getPrenom());
+            s.setCloseur(c);
+        }
+        if (l.getDispatcheur() != null) {
+            LivraisonDetailResponseSuiviDispatcheur d = new LivraisonDetailResponseSuiviDispatcheur();
+            d.setNom(l.getDispatcheur().getNom());
+            d.setPrenom(l.getDispatcheur().getPrenom());
+            s.setDispatcheur(d);
+        }
+
+        s.setDateCreation(offset(l.getDateCreation()));
+        s.setDatePriseEnCharge(offset(l.getDatePriseEnCharge()));
+        s.setDateConfirmation(offset(l.getDateConfirmation()));
+        s.setDatePreteALivrer(offset(l.getDatePreteALivrer()));
+        s.setDateAssignation(offset(l.getDateAssignation()));
+        s.setDateLivraison(offset(l.getDateLivraison()));
+        s.setDateEchec(offset(l.getDateEchec()));
+
+        s.setMinutesPriseEnCharge(minutes(l.getDateCreation(), l.getDatePriseEnCharge()));
+        s.setMinutesClosing(minutes(l.getDatePriseEnCharge(), l.getDatePreteALivrer()));
+        s.setMinutesDispatch(minutes(l.getDatePreteALivrer(), l.getDateAssignation()));
+        s.setMinutesLivraison(minutes(l.getDateAssignation(), l.getDateLivraison()));
+
+        return s;
+    }
+
+    private java.time.OffsetDateTime offset(LocalDateTime dt) {
+        return dt != null ? dt.atOffset(ZoneOffset.UTC) : null;
+    }
+
+    private Integer minutes(LocalDateTime debut, LocalDateTime fin) {
+        if (debut == null || fin == null) {
+            return null;
+        }
+        long m = java.time.Duration.between(debut, fin).toMinutes();
+        return (int) Math.max(0, m);
+    }
 
     /**
      * Récupère le vendeur actuellement connecté

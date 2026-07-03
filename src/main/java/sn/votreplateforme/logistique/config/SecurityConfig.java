@@ -103,6 +103,9 @@ public class SecurityConfig {
                 // Module Dispatch - dispatcheur (l'admin garde un droit de supervision)
                 .requestMatchers("/dispatch/**").hasAnyRole("DISPATCHEUR", "ADMIN")
 
+                // Détail commande partagé (staff) : closeur, dispatcheur, livreur, admin
+                .requestMatchers("/commandes/**").hasAnyRole("CLOSEUR", "DISPATCHEUR", "LIVREUR", "ADMIN")
+
                 // ==================== ENDPOINTS ADMIN ====================
 
                 // Endpoints admin - Nécessite rôle ADMIN

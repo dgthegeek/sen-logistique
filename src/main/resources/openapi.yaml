@@ -487,6 +487,69 @@ paths:
         - bearerAuth: [ ]
 
   # ============================================
+  # ADMIN - PERFORMANCE (contrôle qualité équipe)
+  # ============================================
+  /admin/performance:
+    get:
+      tags:
+        - Admin - Performance
+      operationId: adminPerformance
+      summary: Performances de l'équipe (closeurs, dispatcheurs, livreurs)
+      parameters:
+        - name: periode
+          in: query
+          required: false
+          description: "jour | semaine | mois | tout (défaut : mois)"
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Performances de l'équipe
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PerformanceResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - bearerAuth: [ ]
+
+  # ============================================
+  # COMMANDES - Détail partagé (staff)
+  # ============================================
+  /commandes/{id}:
+    get:
+      tags:
+        - Commandes
+      operationId: commandeDetail
+      summary: Détail d'une commande (closeur, dispatcheur, livreur, admin)
+      description: Détail complet avec la traçabilité qualité (acteurs et durées)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Détail de la commande
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LivraisonDetailResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - bearerAuth: [ ]
+
+  # ============================================
   # ADMIN - RAMASSAGES
   # ============================================
   /admin/ramassages:
@@ -3436,6 +3499,58 @@ components:
               type: string
             telephone:
               type: string
+        suivi:
+          type: object
+          description: Traçabilité qualité (acteurs, horodatage et durées en minutes)
+          properties:
+            closeur:
+              type: object
+              nullable: false
+              properties:
+                nom:
+                  type: string
+                prenom:
+                  type: string
+            dispatcheur:
+              type: object
+              properties:
+                nom:
+                  type: string
+                prenom:
+                  type: string
+            dateCreation:
+              type: string
+              format: date-time
+            datePriseEnCharge:
+              type: string
+              format: date-time
+            dateConfirmation:
+              type: string
+              format: date-time
+            datePreteALivrer:
+              type: string
+              format: date-time
+            dateAssignation:
+              type: string
+              format: date-time
+            dateLivraison:
+              type: string
+              format: date-time
+            dateEchec:
+              type: string
+              format: date-time
+            minutesPriseEnCharge:
+              type: integer
+              description: "Création -> prise en charge par le closeur"
+            minutesClosing:
+              type: integer
+              description: "Prise en charge -> prête à livrer"
+            minutesDispatch:
+              type: integer
+              description: "Prête à livrer -> assignée à un livreur"
+            minutesLivraison:
+              type: integer
+              description: "Assignée -> livrée"
 
     PageLivraison:
       type: object
@@ -3627,6 +3742,59 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ClassementEntry'
+
+    PerfCloseur:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        nom: { type: string }
+        prenom: { type: string }
+        nombrePrisEnCharge: { type: integer }
+        nombrePretes: { type: integer }
+        tempsMoyenPriseEnChargeMin: { type: integer }
+        tempsMoyenClosingMin: { type: integer }
+
+    PerfDispatcheur:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        nom: { type: string }
+        prenom: { type: string }
+        nombreDispatchees: { type: integer }
+        tempsMoyenDispatchMin: { type: integer }
+
+    PerfLivreur:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        nom: { type: string }
+        prenom: { type: string }
+        nombreLivrees: { type: integer }
+        nombreEchecs: { type: integer }
+        tauxReussite: { type: number, format: double }
+        tempsMoyenLivraisonMin: { type: integer }
+
+    PerformanceResponse:
+      type: object
+      properties:
+        periode: { type: string }
+        tempsMoyenPriseEnChargeMin: { type: integer }
+        tempsMoyenDispatchMin: { type: integer }
+        tempsMoyenLivraisonMin: { type: integer }
+        totalLivrees: { type: integer }
+        totalEchecs: { type: integer }
+        closeurs:
+          type: array
+          items:
+            $ref: '#/components/schemas/PerfCloseur'
+        dispatcheurs:
+          type: array
+          items:
+            $ref: '#/components/schemas/PerfDispatcheur'
+        livreurs:
+          type: array
+          items:
+            $ref: '#/components/schemas/PerfLivreur'
 
     VendeurFinances:
       type: object

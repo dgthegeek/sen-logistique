@@ -6,11 +6,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import sn.votreplateforme.logistique.dto.CommandeCloseur;
 import sn.votreplateforme.logistique.dto.CommentaireRequest;
+import sn.votreplateforme.logistique.entity.Closeur;
 import sn.votreplateforme.logistique.entity.Livraison;
 import sn.votreplateforme.logistique.entity.StatutLivraison;
 import sn.votreplateforme.logistique.exception.BusinessException;
 import sn.votreplateforme.logistique.exception.ResourceNotFoundException;
+import sn.votreplateforme.logistique.repository.CloseurRepository;
 import sn.votreplateforme.logistique.repository.LivraisonRepository;
+import sn.votreplateforme.logistique.security.SecurityUtils;
 
 import java.time.ZoneOffset;
 import java.util.List;
@@ -36,6 +39,12 @@ public class ClosingService {
     );
 
     private final LivraisonRepository livraisonRepository;
+    private final CloseurRepository closeurRepository;
+
+    /** Closeur connecté (vide si l'action est faite par un admin). */
+    private Closeur currentCloseur() {
+        return closeurRepository.findByTelephone(SecurityUtils.getCurrentUserTelephone()).orElse(null);
+    }
 
     @Transactional(readOnly = true)
     public List<CommandeCloseur> getCommandes(
@@ -69,6 +78,9 @@ public class ClosingService {
         Livraison l = getCommande(id);
         exigerStatut(l, StatutLivraison.NOUVELLE);
         l.marquerAAppeler();
+        if (l.getCloseur() == null) {
+            l.setCloseur(currentCloseur());
+        }
         return mapToCommandeCloseur(livraisonRepository.save(l));
     }
 
@@ -79,6 +91,9 @@ public class ClosingService {
             throw new BusinessException("Seule une commande Nouvelle ou A appeler peut être confirmée");
         }
         l.marquerConfirmee();
+        if (l.getCloseur() == null) {
+            l.setCloseur(currentCloseur());
+        }
         log.info("Commande {} confirmée par le closeur", l.getNumeroTracking());
         return mapToCommandeCloseur(livraisonRepository.save(l));
     }
