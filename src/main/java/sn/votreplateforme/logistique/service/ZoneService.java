@@ -70,6 +70,18 @@ public class ZoneService {
     }
 
     /**
+     * Variante NON bloquante : renvoie la zone du quartier si trouvé, sinon Optional vide,
+     * sans lever d'exception (évite de marquer la transaction en rollback-only lorsqu'on
+     * autorise un quartier libre / hors liste).
+     */
+    public java.util.Optional<sn.votreplateforme.logistique.entity.Zone> findZoneByQuartierOptional(
+            String quartierNom, String commune) {
+        return quartierRepository.findByNomAndCommune(quartierNom, commune)
+                .map(sn.votreplateforme.logistique.entity.Quartier::getZone)
+                .filter(java.util.Objects::nonNull);
+    }
+
+    /**
      * Récupère les quartiers d'une commune
      *
      * @param commune Nom de la commune (ex: "Dakar")

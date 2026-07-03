@@ -91,15 +91,14 @@ public class LivraisonService {
 
         log.debug("Vendeur: {} {} (ID: {})", vendeur.getPrenom(), vendeur.getNom(), vendeur.getId());
 
-        // 3. Trouver la zone : d'abord via le quartier (précis), sinon repli sur la zone
-        //    fournie (dérivée de la commune) pour autoriser une adresse libre / hors liste.
+        // 3. Trouver la zone : d'abord via le quartier (précis, sans lever d'exception),
+        //    sinon repli sur la zone fournie (dérivée de la commune) pour autoriser une
+        //    adresse libre / hors liste. On évite tout throw ici : une exception, même
+        //    rattrapée, marquerait la transaction en rollback-only.
         Zone zone = null;
-        try {
-            if (request.getQuartier() != null && !request.getQuartier().isBlank()) {
-                zone = zoneService.findZoneByQuartier(request.getQuartier(), request.getCommune());
-            }
-        } catch (RuntimeException e) {
-            log.debug("Quartier '{}' hors liste, repli sur la zone de la commune", request.getQuartier());
+        if (request.getQuartier() != null && !request.getQuartier().isBlank()) {
+            zone = zoneService.findZoneByQuartierOptional(request.getQuartier(), request.getCommune())
+                    .orElse(null);
         }
         if (zone == null) {
             if (request.getZoneId() == null) {
