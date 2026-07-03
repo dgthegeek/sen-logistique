@@ -41,6 +41,7 @@ public class StockService {
     private final UserRepository userRepository;
     private final ProduitCodeGenerator codeGenerator;
     private final QRCodeService qrCodeService;
+    private final TelegramService telegramService;
 
     // ==================== LECTURE ====================
 
@@ -258,6 +259,17 @@ public class StockService {
                 avant, apres, livraisonId, "Livraison effectuée");
         log.info("Sortie stock produit {} (livraison {}): {} -> {}",
                 produit.getCode(), livraisonId, avant, apres);
+
+        // Alerte stock : notifier le vendeur quand le stock passe sous le seuil
+        int seuil = produit.getSeuilAlerte() != null ? produit.getSeuilAlerte() : 0;
+        if (avant > seuil && apres <= seuil) {
+            String msg = apres == 0
+                    ? String.format("🚨 <b>Rupture de stock</b>%n%s (%s) : stock épuisé.",
+                        produit.getNom(), produit.getCode())
+                    : String.format("⚠️ <b>Stock faible</b>%n%s (%s) : il reste %d unité(s) (seuil %d).",
+                        produit.getNom(), produit.getCode(), apres, seuil);
+            telegramService.notifyVendeur(produit.getVendeur(), msg);
+        }
     }
 
     // ==================== HELPERS ====================

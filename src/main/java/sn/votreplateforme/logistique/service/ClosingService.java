@@ -40,6 +40,7 @@ public class ClosingService {
 
     private final LivraisonRepository livraisonRepository;
     private final CloseurRepository closeurRepository;
+    private final TelegramService telegramService;
 
     /** Closeur connecté (vide si l'action est faite par un admin). */
     private Closeur currentCloseur() {
@@ -95,7 +96,12 @@ public class ClosingService {
             l.setCloseur(currentCloseur());
         }
         log.info("Commande {} confirmée par le closeur", l.getNumeroTracking());
-        return mapToCommandeCloseur(livraisonRepository.save(l));
+        CommandeCloseur res = mapToCommandeCloseur(livraisonRepository.save(l));
+        telegramService.notifyVendeur(l.getVendeur(), String.format(
+                "✅ <b>Commande confirmée</b>%nN° %s — client %s%nMontant à collecter : %s FCFA",
+                l.getNumeroTracking(), l.getNomClient(),
+                l.getMontantCOD() != null ? l.getMontantCOD().toBigInteger() : "0"));
+        return res;
     }
 
     @Transactional

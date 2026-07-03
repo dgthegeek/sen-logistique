@@ -40,6 +40,7 @@ public class TransactionService {
     private final TransactionRepository transactionRepository;
     private final VendeurRepository vendeurRepository;
     private final FinanceCalculator financeCalculator;
+    private final TelegramService telegramService;
     
     /**
      * Effectue un paiement à un vendeur
@@ -102,6 +103,10 @@ public class TransactionService {
 
         log.info("✅ Paiement effectué - Ref: {} - Montant soldé: {} FCFA - Solde remis à 0",
             reference, soldeDisponible);
+
+        telegramService.notifyVendeur(vendeur, String.format(
+                "💰 <b>Paiement approuvé</b>%nMontant versé : %s FCFA%nRéférence : %s",
+                soldeDisponible.toBigInteger(), reference));
 
         // 6. Construire la réponse
         AdminFinancesPayerVendeurVendeurIdPost200Response response =

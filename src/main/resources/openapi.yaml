@@ -487,6 +487,45 @@ paths:
         - bearerAuth: [ ]
 
   # ============================================
+  # VENDEUR - NOTIFICATIONS TELEGRAM
+  # ============================================
+  /vendeur/telegram:
+    get:
+      tags:
+        - Vendeur
+      operationId: vendeurTelegram
+      summary: Statut de liaison Telegram (+ lien de liaison)
+      responses:
+        '200':
+          description: Statut Telegram
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TelegramStatut'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+      security:
+        - bearerAuth: [ ]
+
+  /vendeur/telegram/delier:
+    post:
+      tags:
+        - Vendeur
+      operationId: vendeurTelegramDelier
+      summary: Délier le compte Telegram
+      responses:
+        '200':
+          description: Statut Telegram après déliaison
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TelegramStatut'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+      security:
+        - bearerAuth: [ ]
+
+  # ============================================
   # ADMIN - PERFORMANCE (contrôle qualité équipe)
   # ============================================
   /admin/performance:
@@ -3740,6 +3779,21 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ClassementEntry'
+
+    TelegramStatut:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+          description: "Le bot Telegram est configuré côté serveur"
+        lie:
+          type: boolean
+          description: "Le vendeur a lié son compte Telegram"
+        botUsername:
+          type: string
+        deepLink:
+          type: string
+          description: "Lien t.me/<bot>?start=<code> pour lier le compte"
 
     PerfCloseur:
       type: object

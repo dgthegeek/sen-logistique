@@ -122,6 +122,19 @@ public class Vendeur extends User {
     @Column(name = "date_adhesion_classement")
     private LocalDateTime dateAdhesionClassement;
 
+    /**
+     * Identifiant de conversation Telegram du vendeur (rempli après liaison du bot).
+     * Null tant que le vendeur n'a pas lié son compte Telegram.
+     */
+    @Column(name = "telegram_chat_id", length = 50)
+    private String telegramChatId;
+
+    /**
+     * Code temporaire de liaison Telegram (deep link t.me/bot?start=code).
+     */
+    @Column(name = "telegram_link_code", length = 40)
+    private String telegramLinkCode;
+
     // ==================== MÉTHODES UTILITAIRES ====================
 
     /**

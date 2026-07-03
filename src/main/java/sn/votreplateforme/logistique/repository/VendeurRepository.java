@@ -26,6 +26,9 @@ public interface VendeurRepository extends JpaRepository<Vendeur, Long> {
     /** Vendeurs participant à la Dioks League (classement). */
     List<Vendeur> findByParticipeClassementTrue();
 
+    /** Vendeur par code de liaison Telegram (flux d'association du bot). */
+    Optional<Vendeur> findByTelegramLinkCode(String code);
+
     /** Total dû aux partenaires (somme des soldes en attente). */
     @Query("SELECT COALESCE(SUM(v.soldeEnAttente), 0) FROM Vendeur v")
     BigDecimal sumSoldeEnAttente();

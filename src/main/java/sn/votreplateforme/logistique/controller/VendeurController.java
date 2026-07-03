@@ -45,6 +45,7 @@ public class VendeurController implements VendeurApi {
     private final BilanVendeurService bilanVendeurService;
     private final BilanVendeurPdfService bilanVendeurPdfService;
     private final sn.votreplateforme.logistique.service.ClassementService classementService;
+    private final sn.votreplateforme.logistique.service.TelegramService telegramService;
 
     /**
      * GET /vendeur/produits
@@ -309,6 +310,24 @@ public class VendeurController implements VendeurApi {
     public ResponseEntity<ClassementResponse> vendeurClassementQuitter() {
         verifierVendeurActif();
         return ResponseEntity.ok(classementService.quitter());
+    }
+
+    // ===== Notifications Telegram =====
+
+    @Override
+    public ResponseEntity<TelegramStatut> vendeurTelegram() {
+        return ResponseEntity.ok(telegramService.getStatut(getCurrentVendeurEntity()));
+    }
+
+    @Override
+    public ResponseEntity<TelegramStatut> vendeurTelegramDelier() {
+        return ResponseEntity.ok(telegramService.delier(getCurrentVendeurEntity()));
+    }
+
+    private Vendeur getCurrentVendeurEntity() {
+        String telephone = SecurityContextHolder.getContext().getAuthentication().getName();
+        return vendeurRepository.findByTelephone(telephone)
+                .orElseThrow(() -> new RuntimeException("Vendeur non trouvé"));
     }
 
     // ===== MÉTHODE PRIVÉE DE VÉRIFICATION =====

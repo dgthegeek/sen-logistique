@@ -40,6 +40,7 @@ public class LivreurService {
     private final LivraisonRepository livraisonRepository;
     private final LivreurRepository livreurRepository;
     private final StockService stockService;
+    private final TelegramService telegramService;
 
     @Transactional(readOnly = true)
     public List<CommandeLivreur> mesLivraisons(sn.votreplateforme.logistique.dto.StatutLivraison statutDto) {
@@ -86,6 +87,11 @@ public class LivreurService {
 
         // Décrément automatique du stock (multi-produits ou produit unique)
         stockService.enregistrerSortiesLivraison(l);
+
+        telegramService.notifyVendeur(l.getVendeur(), String.format(
+                "📦 <b>Commande livrée</b>%nN° %s — client %s%nVotre chiffre d'affaires a été crédité de %s FCFA.",
+                l.getNumeroTracking(), l.getNomClient(),
+                l.getMontantVendeur() != null ? l.getMontantVendeur().toBigInteger() : "0"));
 
         log.info("Livraison {} livrée - cash collecté: {}", l.getNumeroTracking(), request.getCashCollecte());
         return result;
