@@ -3204,8 +3204,6 @@ components:
         - prenom
         - telephone
         - password
-        - commune
-        - quartier
         - adresseComplete
       properties:
         nom:

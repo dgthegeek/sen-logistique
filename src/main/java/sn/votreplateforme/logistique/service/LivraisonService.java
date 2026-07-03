@@ -91,8 +91,23 @@ public class LivraisonService {
 
         log.debug("Vendeur: {} {} (ID: {})", vendeur.getPrenom(), vendeur.getNom(), vendeur.getId());
 
-        // 3. Trouver la zone à partir du quartier
-        Zone zone = zoneService.findZoneByQuartier(request.getQuartier(), request.getCommune());
+        // 3. Trouver la zone : d'abord via le quartier (précis), sinon repli sur la zone
+        //    fournie (dérivée de la commune) pour autoriser une adresse libre / hors liste.
+        Zone zone = null;
+        try {
+            if (request.getQuartier() != null && !request.getQuartier().isBlank()) {
+                zone = zoneService.findZoneByQuartier(request.getQuartier(), request.getCommune());
+            }
+        } catch (RuntimeException e) {
+            log.debug("Quartier '{}' hors liste, repli sur la zone de la commune", request.getQuartier());
+        }
+        if (zone == null) {
+            if (request.getZoneId() == null) {
+                throw new IllegalArgumentException(
+                        "Impossible de déterminer la zone de livraison (quartier hors liste et zone non fournie)");
+            }
+            zone = zoneService.findById(request.getZoneId());
+        }
 
         // 4. Calculer le tarif de livraison
         TypeUrgence urgenceEntity = (request.getUrgence() != null)
