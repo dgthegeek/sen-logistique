@@ -97,11 +97,47 @@ public class ClosingService {
         }
         log.info("Commande {} confirmée par le closeur", l.getNumeroTracking());
         CommandeCloseur res = mapToCommandeCloseur(livraisonRepository.save(l));
-        telegramService.notifyVendeur(l.getVendeur(), String.format(
-                "✅ <b>Commande confirmée</b>%nN° %s — client %s%nMontant à collecter : %s FCFA",
-                l.getNumeroTracking(), l.getNomClient(),
-                l.getMontantCOD() != null ? l.getMontantCOD().toBigInteger() : "0"));
+        telegramService.notifyVendeur(l.getVendeur(), messageConfirmation(l));
         return res;
+    }
+
+    /**
+     * Message Telegram de confirmation : produits de la commande, client + téléphone
+     * et montant produit (hors frais de livraison, dont le vendeur ne se soucie pas).
+     */
+    private String messageConfirmation(Livraison l) {
+        StringBuilder produits = new StringBuilder();
+        if (l.getLignes() != null && !l.getLignes().isEmpty()) {
+            for (var ligne : l.getLignes()) {
+                if (ligne.getProduit() != null) {
+                    produits.append("\n • ")
+                            .append(ligne.getQuantite() != null ? ligne.getQuantite() : 1)
+                            .append("x ").append(ligne.getProduit().getNom());
+                }
+            }
+        }
+        if (produits.length() == 0) {
+            produits.append("\n • ")
+                    .append(l.getDescriptionProduit() != null ? l.getDescriptionProduit() : "Produit");
+        }
+
+        java.math.BigDecimal cod = l.getMontantCOD() != null ? l.getMontantCOD() : java.math.BigDecimal.ZERO;
+        java.math.BigDecimal frais = l.getFraisLivraison() != null ? l.getFraisLivraison() : java.math.BigDecimal.ZERO;
+        long montantProduit = Math.max(0, cod.subtract(frais).longValue());
+
+        String tel = l.getTelephoneClient() != null ? l.getTelephoneClient() : "—";
+        String client = l.getNomClient() != null ? l.getNomClient() : "—";
+
+        return "✅ <b>Commande confirmée</b>\n"
+                + "N° " + l.getNumeroTracking() + "\n\n"
+                + "👤 <b>Client :</b> " + client + "\n"
+                + "📞 " + tel + "\n\n"
+                + "🛍️ <b>Produits :</b>" + produits + "\n\n"
+                + "💵 <b>Montant :</b> " + formatMontant(montantProduit) + " FCFA";
+    }
+
+    private String formatMontant(long montant) {
+        return String.format(java.util.Locale.US, "%,d", montant).replace(',', ' ');
     }
 
     @Transactional
