@@ -189,11 +189,17 @@ public class LivraisonService {
                     ? request.getQuantite() : 1);
         }
 
-        // Financier : si des produits du catalogue sont liés, le COD = total produits + frais
-        // (autorité serveur, évite tout écart de calcul côté client). Sinon on garde le COD fourni.
-        BigDecimal montantCOD = (montantProduits != null)
-                ? montantProduits.add(fraisLivraison)
-                : request.getMontantCOD();
+        // Financier : le montant est calculé automatiquement à partir des produits, mais le
+        // vendeur peut l'ajuster à la saisie (prix flexible). On respecte donc le COD fourni
+        // par le client s'il est présent ; sinon on retombe sur le total produits + frais.
+        BigDecimal montantCOD;
+        if (request.getMontantCOD() != null && request.getMontantCOD().signum() > 0) {
+            montantCOD = request.getMontantCOD();
+        } else if (montantProduits != null) {
+            montantCOD = montantProduits.add(fraisLivraison);
+        } else {
+            montantCOD = BigDecimal.ZERO;
+        }
         livraison.setMontantCOD(montantCOD);
         livraison.setFraisLivraison(fraisLivraison);
 
