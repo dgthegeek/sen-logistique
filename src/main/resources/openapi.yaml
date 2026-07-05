@@ -3445,12 +3445,9 @@ components:
       required:
         - nomClient
         - telephoneClient
-        - commune
-        - quartier
         - adresseComplete
         - descriptionProduit
         - montantCOD
-        - zoneId
       properties:
         telephoneVendeur:
           type: string

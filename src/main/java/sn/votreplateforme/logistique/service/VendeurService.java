@@ -230,8 +230,11 @@ public class VendeurService {
         financierInfo.setCashCollecte(livraison.getCashCollecte());
         detail.setFinancier(financierInfo);
 
-        // Zone et urgence
-        detail.setZone(livraison.getAdresseDestination().getZone().getNom());
+        // Zone et urgence (zone facultative : adresses en saisie libre)
+        if (livraison.getAdresseDestination() != null
+                && livraison.getAdresseDestination().getZone() != null) {
+            detail.setZone(livraison.getAdresseDestination().getZone().getNom());
+        }
         detail.setUrgence(sn.votreplateforme.logistique.dto.TypeUrgence.valueOf(
                 livraison.getUrgence().name()));
         detail.setCommentaireLivraison(livraison.getCommentaireLivraison());

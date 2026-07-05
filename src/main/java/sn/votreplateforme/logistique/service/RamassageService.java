@@ -42,7 +42,7 @@ public class RamassageService {
         // Grouper par zone
         Map<String, List<Livraison>> ramassagesParZone = livraisonsEnAttente.stream()
                 .collect(Collectors.groupingBy(
-                        livraison -> livraison.getAdresseDestination().getZone().getNom()
+                        this::zoneNomOuDefaut
                 ));
 
         log.info("Zones avec ramassages: {}", ramassagesParZone.keySet());
@@ -73,7 +73,7 @@ public class RamassageService {
         // Grouper par zone
         Map<String, List<Livraison>> ramassagesParZone = livraisonsAujourdhui.stream()
                 .collect(Collectors.groupingBy(
-                        livraison -> livraison.getAdresseDestination().getZone().getNom()
+                        this::zoneNomOuDefaut
                 ));
 
         return ramassagesParZone;
@@ -94,7 +94,7 @@ public class RamassageService {
         List<Livraison> livraisonsZone = livraisonRepository
                 .findByStatut(StatutLivraison.EN_ATTENTE_RAMASSAGE)
                 .stream()
-                .filter(l -> l.getAdresseDestination().getZone().getNom().equals(zoneNom))
+                .filter(l -> zoneNomOuDefaut(l).equals(zoneNom))
                 .collect(Collectors.toList());
 
         if (livraisonsZone.isEmpty()) {
@@ -226,5 +226,13 @@ public class RamassageService {
                 .sum());
 
         return stats;
+    }
+
+    /** Nom de zone d'une livraison, ou "Sans zone" si l'adresse est libre (pas de zone). */
+    private String zoneNomOuDefaut(Livraison l) {
+        if (l.getAdresseDestination() != null && l.getAdresseDestination().getZone() != null) {
+            return l.getAdresseDestination().getZone().getNom();
+        }
+        return "Sans zone";
     }
 }

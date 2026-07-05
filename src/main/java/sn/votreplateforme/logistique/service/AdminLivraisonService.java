@@ -111,16 +111,13 @@ public class AdminLivraisonService {
         // Filtrer par zone si spécifié
         if (zoneNom != null && !zoneNom.isEmpty()) {
             livraisonsRamassees = livraisonsRamassees.stream()
-                    .filter(l -> l.getAdresseDestination().getZone().getNom()
-                            .equalsIgnoreCase(zoneNom))
+                    .filter(l -> zoneNom.equalsIgnoreCase(zoneNomOuDefaut(l)))
                     .collect(Collectors.toList());
         }
 
-        // Grouper par zone
+        // Grouper par zone (zone facultative : adresses en saisie libre)
         Map<String, List<Livraison>> parZone = livraisonsRamassees.stream()
-                .collect(Collectors.groupingBy(
-                        l -> l.getAdresseDestination().getZone().getNom()
-                ));
+                .collect(Collectors.groupingBy(this::zoneNomOuDefaut));
 
         // Construire les LivraisonZone
         List<LivraisonZone> zones = new ArrayList<>();
@@ -226,8 +223,11 @@ public class AdminLivraisonService {
             detail.setLivreur(livreurInfo);
         }
 
-        // Zone et urgence
-        detail.setZone(livraison.getAdresseDestination().getZone().getNom());
+        // Zone et urgence (zone facultative : adresses en saisie libre)
+        if (livraison.getAdresseDestination() != null
+                && livraison.getAdresseDestination().getZone() != null) {
+            detail.setZone(livraison.getAdresseDestination().getZone().getNom());
+        }
         detail.setUrgence(sn.votreplateforme.logistique.dto.TypeUrgence.valueOf(
                 livraison.getUrgence().name()));
         detail.setCommentaireLivraison(livraison.getCommentaireLivraison());
@@ -235,6 +235,14 @@ public class AdminLivraisonService {
         log.info("✅ Détails livraison {} récupérés", livraison.getNumeroTracking());
 
         return detail;
+    }
+
+    /** Nom de zone d'une livraison, ou "Sans zone" si l'adresse est libre (pas de zone). */
+    private String zoneNomOuDefaut(Livraison l) {
+        if (l.getAdresseDestination() != null && l.getAdresseDestination().getZone() != null) {
+            return l.getAdresseDestination().getZone().getNom();
+        }
+        return "Sans zone";
     }
 
     // ==================== MÉTHODES PRIVÉES ====================

@@ -250,7 +250,7 @@ public class LivraisonService {
             String messageVendeur = String.format(
                     "Nouvelle livraison créée !\n\n" +
                             "📦 Colis : #%s\n" +
-                            "📍 Destination : %s, %s\n" +
+                            "📍 Destination : %s\n" +
                             "👤 Client : %s (%s)\n" +
                             "💰 Montant COD : %s FCFA\n" +
                             "📊 Frais livraison : %s FCFA\n" +
@@ -258,8 +258,7 @@ public class LivraisonService {
                             "Préparez le colis pour le ramassage.\n" +
                             "Merci ! 💚",
                     livraison.getNumeroTracking(),
-                    livraison.getAdresseDestination().getQuartier().toUpperCase(),
-                    livraison.getAdresseDestination().getCommune().toUpperCase(),
+                    destinationTexte(livraison),
                     livraison.getNomClient().toUpperCase(),
                     livraison.getTelephoneClient(),
                     formatMontant(livraison.getMontantCOD()),
@@ -300,8 +299,7 @@ public class LivraisonService {
                             "Colis : #%s\n" +
                             "🏪 Vendeur : %s %s\n" +
                             "📱 Tél vendeur : %s\n\n" +
-                            "📍 Zone : %s\n" +
-                            "🎯 Destination : %s, %s\n" +
+                            "🎯 Destination : %s\n" +
                             "👤 Client : %s (%s)\n\n" +
                             "💰 COD : %s FCFA\n" +
                             "📊 Frais : %s FCFA\n" +
@@ -312,9 +310,7 @@ public class LivraisonService {
                     livraison.getVendeur().getPrenom().toUpperCase(),
                     livraison.getVendeur().getNom().toUpperCase(),
                     livraison.getVendeur().getTelephone(),
-                    livraison.getAdresseDestination().getZone().getNom().toUpperCase(),
-                    livraison.getAdresseDestination().getQuartier().toUpperCase(),
-                    livraison.getAdresseDestination().getCommune().toUpperCase(),
+                    destinationTexte(livraison),
                     livraison.getNomClient().toUpperCase(),
                     livraison.getTelephoneClient(),
                     formatMontant(livraison.getMontantCOD()),
@@ -335,19 +331,41 @@ public class LivraisonService {
                             + "N° %s\n\n"
                             + "👤 <b>Client :</b> %s\n"
                             + "📞 %s\n"
-                            + "📍 %s, %s\n\n"
+                            + "📍 %s\n\n"
                             + "À appeler pour confirmation.",
                     livraison.getNumeroTracking(),
                     livraison.getNomClient(),
                     livraison.getTelephoneClient(),
-                    livraison.getAdresseDestination().getQuartier(),
-                    livraison.getAdresseDestination().getCommune()
+                    destinationTexte(livraison)
             ));
 
         } catch (Exception e) {
             // Ne pas bloquer la création de livraison si notifications échouent
             log.error("❌ Erreur lors de l'envoi des notifications : {}", e.getMessage());
         }
+    }
+
+    /**
+     * Adresse de destination en texte (saisie libre). Repli sur quartier/commune
+     * si l'adresse complète est vide. Ne lève jamais d'exception (null-safe).
+     */
+    private String destinationTexte(Livraison livraison) {
+        Adresse a = livraison.getAdresseDestination();
+        if (a == null) {
+            return "-";
+        }
+        if (a.getAdresseComplete() != null && !a.getAdresseComplete().isBlank()) {
+            return a.getAdresseComplete();
+        }
+        StringBuilder sb = new StringBuilder();
+        if (a.getQuartier() != null && !a.getQuartier().isBlank()) {
+            sb.append(a.getQuartier());
+        }
+        if (a.getCommune() != null && !a.getCommune().isBlank()) {
+            if (sb.length() > 0) sb.append(", ");
+            sb.append(a.getCommune());
+        }
+        return sb.length() > 0 ? sb.toString() : "-";
     }
 
     /**

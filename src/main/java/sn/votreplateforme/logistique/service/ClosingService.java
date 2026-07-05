@@ -140,6 +140,20 @@ public class ClosingService {
         return String.format(java.util.Locale.US, "%,d", montant).replace(',', ' ');
     }
 
+    /** Adresse de destination en texte (saisie libre), null-safe. */
+    private String adresseTexte(Livraison l) {
+        var a = l.getAdresseDestination();
+        if (a == null) return "-";
+        if (a.getAdresseComplete() != null && !a.getAdresseComplete().isBlank()) return a.getAdresseComplete();
+        StringBuilder sb = new StringBuilder();
+        if (a.getQuartier() != null && !a.getQuartier().isBlank()) sb.append(a.getQuartier());
+        if (a.getCommune() != null && !a.getCommune().isBlank()) {
+            if (sb.length() > 0) sb.append(", ");
+            sb.append(a.getCommune());
+        }
+        return sb.length() > 0 ? sb.toString() : "-";
+    }
+
     @Transactional
     public CommandeCloseur preteALivrer(Long id) {
         Livraison l = getCommande(id);
@@ -154,13 +168,12 @@ public class ClosingService {
                         + "N° %s\n\n"
                         + "👤 <b>Client :</b> %s\n"
                         + "📞 %s\n"
-                        + "📍 %s, %s\n\n"
+                        + "📍 %s\n\n"
                         + "À assigner à un livreur.",
                 l.getNumeroTracking(),
                 l.getNomClient(),
                 l.getTelephoneClient(),
-                l.getAdresseDestination().getQuartier(),
-                l.getAdresseDestination().getCommune()
+                adresseTexte(l)
         ));
 
         return result;

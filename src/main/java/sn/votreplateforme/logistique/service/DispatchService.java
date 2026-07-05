@@ -117,13 +117,12 @@ public class DispatchService {
                             + "N° %s\n\n"
                             + "👤 <b>Client :</b> %s\n"
                             + "📞 %s\n"
-                            + "📍 %s, %s\n"
+                            + "📍 %s\n"
                             + "💰 <b>À encaisser :</b> %s FCFA",
                     l.getNumeroTracking(),
                     l.getNomClient(),
                     l.getTelephoneClient(),
-                    l.getAdresseDestination().getQuartier(),
-                    l.getAdresseDestination().getCommune(),
+                    adresseTexte(l),
                     formatMontant(l.getMontantCOD())
             ));
         }
@@ -160,5 +159,19 @@ public class DispatchService {
             return "0";
         }
         return String.format("%,d", montant.longValue()).replace(',', ' ');
+    }
+
+    /** Adresse de destination en texte (saisie libre), null-safe. */
+    private String adresseTexte(Livraison l) {
+        var a = l.getAdresseDestination();
+        if (a == null) return "-";
+        if (a.getAdresseComplete() != null && !a.getAdresseComplete().isBlank()) return a.getAdresseComplete();
+        StringBuilder sb = new StringBuilder();
+        if (a.getQuartier() != null && !a.getQuartier().isBlank()) sb.append(a.getQuartier());
+        if (a.getCommune() != null && !a.getCommune().isBlank()) {
+            if (sb.length() > 0) sb.append(", ");
+            sb.append(a.getCommune());
+        }
+        return sb.length() > 0 ? sb.toString() : "-";
     }
 }
