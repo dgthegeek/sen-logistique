@@ -76,6 +76,7 @@ public class VendeurService {
         statsJour.setTotalColis(totalColis);
         statsJour.setColisLivres(colisLivres);
         statsJour.setColisEnCours(colisEnCours);
+        statsJour.setColisEchecs(colisTermines);
 
         // Construire les finances
         VendeurDashboardFinances finances = new VendeurDashboardFinances();

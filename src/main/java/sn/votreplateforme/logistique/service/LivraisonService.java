@@ -230,8 +230,8 @@ public class LivraisonService {
         // 10. ENVOYER LES 3 NOTIFICATIONS
         envoyerNotificationsCreation(livraison);
 
-        // 11. Calculer le montant que le vendeur recevra
-        BigDecimal montantARecevoir = request.getMontantCOD().subtract(fraisLivraison);
+        // 11. Calculer le montant que le vendeur recevra : COD encaissé - commission (frais)
+        BigDecimal montantARecevoir = montantCOD.subtract(fraisLivraison);
 
         // 12. Créer la réponse
         return buildLivraisonResponse(livraison, montantARecevoir);

@@ -19,7 +19,8 @@ public class AdminPerformanceController implements AdminPerformanceApi {
     private final PerformanceService performanceService;
 
     @Override
-    public ResponseEntity<PerformanceResponse> adminPerformance(String periode) {
-        return ResponseEntity.ok(performanceService.getPerformance(periode));
+    public ResponseEntity<PerformanceResponse> adminPerformance(
+            String periode, java.time.LocalDate debut, java.time.LocalDate fin) {
+        return ResponseEntity.ok(performanceService.getPerformance(periode, debut, fin));
     }
 }

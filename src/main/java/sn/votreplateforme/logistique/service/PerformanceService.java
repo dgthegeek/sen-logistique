@@ -33,19 +33,25 @@ public class PerformanceService {
     private final LivraisonRepository livraisonRepository;
 
     @Transactional(readOnly = true)
-    public PerformanceResponse getPerformance(String periode) {
+    public PerformanceResponse getPerformance(String periode, LocalDate debut, LocalDate fin) {
         String p = (periode == null || periode.isBlank()) ? "mois" : periode.toLowerCase();
 
         List<Livraison> livraisons;
-        if ("tout".equals(p)) {
+        if (debut != null && fin != null) {
+            // Plage de dates explicite (comme le bilan) : prime sur la période prédéfinie
+            LocalDateTime from = debut.atStartOfDay();
+            LocalDateTime to = fin.plusDays(1).atStartOfDay(); // fin incluse
+            livraisons = livraisonRepository.findByDateCreationBetween(from, to);
+            p = debut + " → " + fin;
+        } else if ("tout".equals(p)) {
             livraisons = livraisonRepository.findAll();
         } else {
-            LocalDateTime debut = switch (p) {
+            LocalDateTime from = switch (p) {
                 case "jour" -> LocalDate.now().atStartOfDay();
                 case "semaine" -> LocalDate.now().minusDays(7).atStartOfDay();
                 default -> LocalDate.now().minusDays(30).atStartOfDay();
             };
-            livraisons = livraisonRepository.findByDateCreationBetween(debut, LocalDateTime.now());
+            livraisons = livraisonRepository.findByDateCreationBetween(from, LocalDateTime.now());
         }
 
         Map<Long, CloseurAcc> closeurs = new LinkedHashMap<>();

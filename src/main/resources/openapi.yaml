@@ -538,9 +538,23 @@ paths:
         - name: periode
           in: query
           required: false
-          description: "jour | semaine | mois | tout (défaut : mois)"
+          description: "jour | semaine | mois | tout (défaut : mois). Ignoré si debut/fin sont fournis."
           schema:
             type: string
+        - name: debut
+          in: query
+          required: false
+          description: "Date de début (incluse). Si debut et fin sont fournis, ils priment sur periode."
+          schema:
+            type: string
+            format: date
+        - name: fin
+          in: query
+          required: false
+          description: "Date de fin (incluse)."
+          schema:
+            type: string
+            format: date
       responses:
         '200':
           description: Performances de l'équipe
@@ -3717,6 +3731,10 @@ components:
             colisEnCours:
               type: integer
               example: 4
+            colisEchecs:
+              type: integer
+              description: "Commandes en échec / annulées sur la période"
+              example: 1
         finances:
           type: object
           properties:
