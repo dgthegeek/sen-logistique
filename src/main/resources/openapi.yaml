@@ -3523,6 +3523,10 @@ components:
           $ref: '#/components/schemas/TypeUrgence'
         commentaireLivraison:
           type: string
+        motifEchec:
+          type: string
+          description: "Motif d'échec (renseigné si la livraison a échoué)"
+          enum: [TELEPHONE_INJOIGNABLE, CLIENT_ABSENT, ADRESSE_INCORRECTE, REFUS_CLIENT, REPORT_CLIENT]
         livreur:
           type: object
           description: Livreur assigné (null tant que non assignée)

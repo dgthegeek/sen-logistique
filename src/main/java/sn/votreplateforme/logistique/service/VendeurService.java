@@ -234,6 +234,9 @@ public class VendeurService {
         detail.setUrgence(sn.votreplateforme.logistique.dto.TypeUrgence.valueOf(
                 livraison.getUrgence().name()));
         detail.setCommentaireLivraison(livraison.getCommentaireLivraison());
+        if (livraison.getMotifEchec() != null) {
+            detail.setMotifEchec(LivraisonDetailResponse.MotifEchecEnum.valueOf(livraison.getMotifEchec().name()));
+        }
 
         // Livreur assigné (module Dispatch) - null tant que la commande n'est pas assignée
         if (livraison.getLivreur() != null) {
