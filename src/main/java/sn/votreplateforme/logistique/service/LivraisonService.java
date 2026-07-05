@@ -92,24 +92,7 @@ public class LivraisonService {
 
         log.debug("Vendeur: {} {} (ID: {})", vendeur.getPrenom(), vendeur.getNom(), vendeur.getId());
 
-        // 3. Trouver la zone : d'abord via le quartier (précis, sans lever d'exception),
-        //    sinon repli sur la zone fournie (dérivée de la commune) pour autoriser une
-        //    adresse libre / hors liste. On évite tout throw ici : une exception, même
-        //    rattrapée, marquerait la transaction en rollback-only.
-        Zone zone = null;
-        if (request.getQuartier() != null && !request.getQuartier().isBlank()) {
-            zone = zoneService.findZoneByQuartierOptional(request.getQuartier(), request.getCommune())
-                    .orElse(null);
-        }
-        if (zone == null) {
-            if (request.getZoneId() == null) {
-                throw new IllegalArgumentException(
-                        "Impossible de déterminer la zone de livraison (quartier hors liste et zone non fournie)");
-            }
-            zone = zoneService.findById(request.getZoneId());
-        }
-
-        // 4. Calculer le tarif de livraison
+        // 3. Urgence + poids
         TypeUrgence urgenceEntity = (request.getUrgence() != null)
                 ? TypeUrgence.valueOf(request.getUrgence().name())
                 : TypeUrgence.NORMAL;
@@ -117,16 +100,34 @@ public class LivraisonService {
             request.setPoids(3d);
         }
 
-        // Prix de livraison = commission fixe négociée avec le vendeur (réglée par l'admin).
-        // Repli sur la tarification par zone tant que la commission n'a pas été fixée.
+        // 4. Prix de livraison = commission fixe du vendeur (cas standard désormais).
+        //    Les zones/quartiers ne servent plus à tarifer : les adresses sont en saisie
+        //    libre. On ne cherche une zone (repli legacy) que si la commission n'est pas
+        //    encore fixée. Aucune exception ici (une exception, même rattrapée, marquerait
+        //    la transaction en rollback-only).
+        Zone zone = null;
         BigDecimal fraisLivraison;
         if (vendeur.getCommissionFixe() != null) {
             fraisLivraison = vendeur.getCommissionFixe();
             log.debug("Commission fixe vendeur appliquée: {} FCFA", fraisLivraison);
         } else {
-            fraisLivraison = tarifCalculator.calculer(zone, urgenceEntity, request.getPoids());
-            log.debug("Tarif zone calculé: {} FCFA (urgence: {}, poids: {} kg)",
-                    fraisLivraison, urgenceEntity, request.getPoids());
+            // Repli : ancienne tarification par zone si la commission n'est pas définie
+            if (request.getQuartier() != null && !request.getQuartier().isBlank()) {
+                zone = zoneService.findZoneByQuartierOptional(request.getQuartier(), request.getCommune())
+                        .orElse(null);
+            }
+            if (zone == null && request.getZoneId() != null) {
+                zone = zoneService.findById(request.getZoneId());
+            }
+            if (zone != null) {
+                fraisLivraison = tarifCalculator.calculer(zone, urgenceEntity, request.getPoids());
+                log.debug("Tarif zone (repli) calculé: {} FCFA", fraisLivraison);
+            } else {
+                // Vendeur sans commission et adresse libre : pas de tarif applicable → 0
+                fraisLivraison = BigDecimal.ZERO;
+                log.warn("Vendeur {} sans commission fixe et sans zone : frais de livraison = 0",
+                        vendeur.getId());
+            }
         }
 
         // 5. Générer le numéro de tracking
