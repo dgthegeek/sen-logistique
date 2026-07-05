@@ -79,7 +79,21 @@ public abstract class User {
     @CreatedDate
     @Column(nullable = false, updatable = false)
     private LocalDateTime dateInscription;
-    
+
+    /**
+     * Identifiant de conversation Telegram (rempli après liaison du bot).
+     * Disponible pour tous les rôles : chacun peut lier son compte dans "Mon compte"
+     * et recevoir les notifications qui le concernent.
+     */
+    @Column(name = "telegram_chat_id", length = 50)
+    private String telegramChatId;
+
+    /**
+     * Code temporaire de liaison Telegram (deep link t.me/bot?start=code).
+     */
+    @Column(name = "telegram_link_code", length = 40)
+    private String telegramLinkCode;
+
     /**
      * Retourne le nom complet
      */

@@ -53,4 +53,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * @return true si l'email existe
      */
     boolean existsByEmail(String email);
+
+    /**
+     * Trouve un utilisateur par son code temporaire de liaison Telegram.
+     * Utilisé lors du polling getUpdates pour associer un chat à un compte.
+     */
+    Optional<User> findByTelegramLinkCode(String telegramLinkCode);
 }

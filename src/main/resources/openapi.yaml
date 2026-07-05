@@ -2030,6 +2030,43 @@ paths:
       security:
         - bearerAuth: [ ]
 
+  /profil/telegram:
+    get:
+      tags:
+        - Profil
+      operationId: profilTelegram
+      summary: Statut de liaison Telegram de l'utilisateur connecté (+ lien de liaison)
+      description: Disponible pour tous les rôles (vendeur, closeur, dispatcheur, livreur, admin)
+      responses:
+        '200':
+          description: Statut Telegram
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TelegramStatut'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+      security:
+        - bearerAuth: [ ]
+
+  /profil/telegram/delier:
+    post:
+      tags:
+        - Profil
+      operationId: profilTelegramDelier
+      summary: Délier le compte Telegram de l'utilisateur connecté
+      responses:
+        '200':
+          description: Statut Telegram après déliaison
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TelegramStatut'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+      security:
+        - bearerAuth: [ ]
+
   # ============================================
   # ADMIN - QUARTIERS
   # ============================================

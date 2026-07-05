@@ -15,4 +15,7 @@ public interface CloseurRepository extends JpaRepository<Closeur, Long> {
     Optional<Closeur> findByTelephone(String telephone);
 
     Optional<Closeur> findByEmail(String email);
+
+    /** Closeurs actifs ayant lié leur compte Telegram (notification de file). */
+    java.util.List<Closeur> findByActifTrueAndTelegramChatIdIsNotNull();
 }

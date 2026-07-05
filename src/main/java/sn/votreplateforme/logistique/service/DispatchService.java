@@ -36,6 +36,7 @@ public class DispatchService {
     private final LivraisonRepository livraisonRepository;
     private final LivreurRepository livreurRepository;
     private final DispatcheurRepository dispatcheurRepository;
+    private final TelegramService telegramService;
 
     /** Dispatcheur connecté (vide si l'action est faite par un admin). */
     private Dispatcheur currentDispatcheur() {
@@ -109,6 +110,22 @@ public class DispatchService {
             l.setDispatcheur(dispatcheur);
             livraisonRepository.save(l);
             assignees++;
+
+            // Notification Telegram au livreur assigné : nouvelle course
+            telegramService.notifyUser(livreur, String.format(
+                    "🛵 <b>Nouvelle livraison assignée</b>\n"
+                            + "N° %s\n\n"
+                            + "👤 <b>Client :</b> %s\n"
+                            + "📞 %s\n"
+                            + "📍 %s, %s\n"
+                            + "💰 <b>À encaisser :</b> %s FCFA",
+                    l.getNumeroTracking(),
+                    l.getNomClient(),
+                    l.getTelephoneClient(),
+                    l.getAdresseDestination().getQuartier(),
+                    l.getAdresseDestination().getCommune(),
+                    formatMontant(l.getMontantCOD())
+            ));
         }
 
         log.info("{} commande(s) assignée(s) au livreur {}", assignees, livreur.getNomComplet());
@@ -136,5 +153,12 @@ public class DispatchService {
         c.setProduit(l.getDescriptionProduit());
         c.setMontantCOD(l.getMontantCOD());
         return c;
+    }
+
+    private String formatMontant(java.math.BigDecimal montant) {
+        if (montant == null) {
+            return "0";
+        }
+        return String.format("%,d", montant.longValue()).replace(',', ' ');
     }
 }

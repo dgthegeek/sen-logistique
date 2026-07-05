@@ -15,4 +15,7 @@ public interface DispatcheurRepository extends JpaRepository<Dispatcheur, Long> 
     Optional<Dispatcheur> findByTelephone(String telephone);
 
     Optional<Dispatcheur> findByEmail(String email);
+
+    /** Dispatcheurs actifs ayant lié leur compte Telegram (notification de file). */
+    java.util.List<Dispatcheur> findByActifTrueAndTelegramChatIdIsNotNull();
 }

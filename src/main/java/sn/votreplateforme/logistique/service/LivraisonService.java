@@ -49,6 +49,7 @@ public class LivraisonService {
     private final UserRepository userRepository;
     private final NotificationService notificationService;
     private final ProduitRepository produitRepository;
+    private final TelegramService telegramService;
 
     /**
      * Crée une nouvelle livraison
@@ -326,6 +327,21 @@ public class LivraisonService {
                     messageAdmin
             );
             log.info("📱 Notification admin envoyée");
+
+            // 4️⃣ NOTIFICATION TELEGRAM AUX CLOSEURS : nouvelle commande à prendre en charge
+            telegramService.notifyCloseurs(String.format(
+                    "🆕 <b>Nouvelle commande à prendre en charge</b>\n"
+                            + "N° %s\n\n"
+                            + "👤 <b>Client :</b> %s\n"
+                            + "📞 %s\n"
+                            + "📍 %s, %s\n\n"
+                            + "À appeler pour confirmation.",
+                    livraison.getNumeroTracking(),
+                    livraison.getNomClient(),
+                    livraison.getTelephoneClient(),
+                    livraison.getAdresseDestination().getQuartier(),
+                    livraison.getAdresseDestination().getCommune()
+            ));
 
         } catch (Exception e) {
             // Ne pas bloquer la création de livraison si notifications échouent

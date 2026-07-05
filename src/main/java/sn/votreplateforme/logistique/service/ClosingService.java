@@ -146,7 +146,24 @@ public class ClosingService {
         exigerStatut(l, StatutLivraison.CONFIRMEE);
         l.marquerPreteALivrer();
         log.info("Commande {} prête à livrer (dispatch)", l.getNumeroTracking());
-        return mapToCommandeCloseur(livraisonRepository.save(l));
+        CommandeCloseur result = mapToCommandeCloseur(livraisonRepository.save(l));
+
+        // Notification Telegram aux dispatcheurs : commande prête à être assignée
+        telegramService.notifyDispatcheurs(String.format(
+                "📦 <b>Commande prête à livrer</b>\n"
+                        + "N° %s\n\n"
+                        + "👤 <b>Client :</b> %s\n"
+                        + "📞 %s\n"
+                        + "📍 %s, %s\n\n"
+                        + "À assigner à un livreur.",
+                l.getNumeroTracking(),
+                l.getNomClient(),
+                l.getTelephoneClient(),
+                l.getAdresseDestination().getQuartier(),
+                l.getAdresseDestination().getCommune()
+        ));
+
+        return result;
     }
 
     /**
