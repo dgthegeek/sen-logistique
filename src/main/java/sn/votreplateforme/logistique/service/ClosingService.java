@@ -31,11 +31,14 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ClosingService {
 
-    /** Statuts visibles dans la file du closeur. */
+    /** Statuts visibles dans la file du closeur.
+     *  PRETE_A_LIVRER y figure pour que le closeur puisse annuler (avec motif) une commande
+     *  déjà passée au dispatch si celui-ci signale un problème. */
     private static final List<StatutLivraison> FILE_CLOSEUR = List.of(
             StatutLivraison.NOUVELLE,
             StatutLivraison.A_APPELER,
-            StatutLivraison.CONFIRMEE
+            StatutLivraison.CONFIRMEE,
+            StatutLivraison.PRETE_A_LIVRER
     );
 
     private final LivraisonRepository livraisonRepository;
