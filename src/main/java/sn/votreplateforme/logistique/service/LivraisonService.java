@@ -116,10 +116,17 @@ public class LivraisonService {
             request.setPoids(3d);
         }
 
-        BigDecimal fraisLivraison = tarifCalculator.calculer(zone, urgenceEntity, request.getPoids());
-
-        log.debug("Tarif calculé: {} FCFA (urgence: {}, poids: {} kg)",
-                fraisLivraison, urgenceEntity, request.getPoids());
+        // Prix de livraison = commission fixe négociée avec le vendeur (réglée par l'admin).
+        // Repli sur la tarification par zone tant que la commission n'a pas été fixée.
+        BigDecimal fraisLivraison;
+        if (vendeur.getCommissionFixe() != null) {
+            fraisLivraison = vendeur.getCommissionFixe();
+            log.debug("Commission fixe vendeur appliquée: {} FCFA", fraisLivraison);
+        } else {
+            fraisLivraison = tarifCalculator.calculer(zone, urgenceEntity, request.getPoids());
+            log.debug("Tarif zone calculé: {} FCFA (urgence: {}, poids: {} kg)",
+                    fraisLivraison, urgenceEntity, request.getPoids());
+        }
 
         // 5. Générer le numéro de tracking
         String numeroTracking = trackingNumberGenerator.generate();

@@ -115,7 +115,7 @@ public class VendeurAdminService {
     }
 
     @Transactional
-    public AdminVendeursIdValiderPost200Response validerVendeur(Long vendeurId) {
+    public AdminVendeursIdValiderPost200Response validerVendeur(Long vendeurId, java.math.BigDecimal commission) {
         Vendeur vendeur = vendeurRepository.findById(vendeurId)
                 .orElseThrow(() -> new NotFoundException("Vendeur non trouvé"));
 
@@ -128,6 +128,11 @@ public class VendeurAdminService {
         vendeur.setValideLe(LocalDateTime.now());
         vendeur.setRaisonSuspension(null);
 
+        // Commission fixe (prix de livraison) réglée par l'admin à la validation
+        if (commission != null) {
+            vendeur.setCommissionFixe(commission);
+        }
+
         vendeurRepository.save(vendeur);
 
         AdminVendeursIdValiderPost200Response response = new AdminVendeursIdValiderPost200Response();
@@ -135,6 +140,16 @@ public class VendeurAdminService {
         response.setVendeur(toVendeurDTO(vendeur));
 
         return response;
+    }
+
+    /** Définit / modifie la commission fixe (prix de livraison) d'un vendeur. */
+    @Transactional
+    public VendeurDTO setCommission(Long vendeurId, java.math.BigDecimal commission) {
+        Vendeur vendeur = vendeurRepository.findById(vendeurId)
+                .orElseThrow(() -> new NotFoundException("Vendeur non trouvé"));
+        vendeur.setCommissionFixe(commission);
+        vendeurRepository.save(vendeur);
+        return toVendeurDTO(vendeur);
     }
 
     @Transactional
@@ -266,6 +281,7 @@ public class VendeurAdminService {
         }
 
         dto.setSoldeEnAttente(vendeur.getSoldeEnAttente());
+        dto.setCommissionFixe(vendeur.getCommissionFixe());
         dto.setRaisonSuspension(vendeur.getRaisonSuspension());
         return dto;
     }
@@ -295,6 +311,7 @@ public class VendeurAdminService {
         }
 
         dto.setSoldeEnAttente(vendeur.getSoldeEnAttente());
+        dto.setCommissionFixe(vendeur.getCommissionFixe());
         dto.setRaisonSuspension(vendeur.getRaisonSuspension());
         return dto;
     }

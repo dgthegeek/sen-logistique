@@ -153,6 +153,7 @@ public class ProfilService {
             dto.setAdresseComplete(vendeur.getAdresseComplete());
             dto.setStatut(StatutVendeur.fromValue(vendeur.getStatut().name()));
             dto.setSoldeEnAttente(vendeur.getSoldeEnAttente());
+            dto.setCommissionFixe(vendeur.getCommissionFixe());
         }
 
         return dto;

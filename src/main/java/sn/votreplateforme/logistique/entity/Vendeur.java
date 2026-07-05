@@ -111,6 +111,14 @@ public class Vendeur extends User {
     private String raisonSuspension;
 
     /**
+     * Commission fixe négociée avec le partenaire, réglée par l'admin à la validation.
+     * Elle sert de <b>prix de livraison fixe</b> pour chaque commande de ce vendeur
+     * (remplace la tarification par zone). Null = pas encore fixée (repli tarif zone).
+     */
+    @Column(name = "commission_fixe", precision = 12, scale = 2)
+    private BigDecimal commissionFixe;
+
+    /**
      * Participation à la Dioks League (classement gamifié entre vendeurs).
      * Opt-in : tant que false, le vendeur n'apparaît pas dans le classement des autres.
      * Les stats étant calculées sur les livraisons réelles, quitter/revenir ne remet rien à zéro.

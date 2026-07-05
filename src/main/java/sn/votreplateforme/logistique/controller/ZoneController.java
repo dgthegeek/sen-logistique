@@ -4,8 +4,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import sn.votreplateforme.logistique.api.ZonesApi;
 import sn.votreplateforme.logistique.dto.*;
+import sn.votreplateforme.logistique.entity.Vendeur;
+import sn.votreplateforme.logistique.repository.UserRepository;
 import sn.votreplateforme.logistique.service.ZoneService;
 
 import java.util.List;
@@ -24,6 +28,7 @@ import java.util.List;
 public class ZoneController implements ZonesApi {
 
     private final ZoneService zoneService;
+    private final UserRepository userRepository;
 
     /**
      * GET /api/zones
@@ -86,7 +91,30 @@ public class ZoneController implements ZonesApi {
         // Calculer le tarif (ZoneService gère la conversion interne)
         TarifResponse tarifResponse = zoneService.calculerTarif(zoneId, urgence, poids);
 
-        log.info("Tarif calculé : {} FCFA", tarifResponse.getMontant());
+        // Si le vendeur connecté a une commission fixe négociée, elle prime sur le tarif de zone
+        // (c'est son prix de livraison réel). Sert d'aperçu cohérent côté formulaire de création.
+        java.math.BigDecimal commission = getCommissionVendeurConnecte();
+        if (commission != null) {
+            tarifResponse.setMontant(commission);
+            log.info("Commission fixe vendeur appliquée à l'aperçu : {} FCFA", commission);
+        } else {
+            log.info("Tarif calculé : {} FCFA", tarifResponse.getMontant());
+        }
         return ResponseEntity.ok(tarifResponse);
+    }
+
+    /**
+     * Retourne la commission fixe du vendeur connecté (ou null si l'appelant n'est pas
+     * un vendeur, n'est pas authentifié, ou n'a pas de commission définie).
+     */
+    private java.math.BigDecimal getCommissionVendeurConnecte() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || auth.getName() == null) {
+            return null;
+        }
+        return userRepository.findByTelephone(auth.getName())
+                .filter(u -> u instanceof Vendeur)
+                .map(u -> ((Vendeur) u).getCommissionFixe())
+                .orElse(null);
     }
 }

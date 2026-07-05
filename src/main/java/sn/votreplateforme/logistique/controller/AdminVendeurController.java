@@ -109,15 +109,34 @@ public class AdminVendeurController implements AdminVendeursApi {
      * POST /admin/vendeurs/{id}/valider
      */
     @Override
-    public ResponseEntity<AdminVendeursIdValiderPost200Response> adminVendeursIdValiderPost(Long id) {
-        log.info("✅ Validation vendeur {}", id);
+    public ResponseEntity<AdminVendeursIdValiderPost200Response> adminVendeursIdValiderPost(
+            Long id,
+            AdminVendeursIdValiderPostRequest adminVendeursIdValiderPostRequest) {
+        java.math.BigDecimal commission = adminVendeursIdValiderPostRequest != null
+                ? adminVendeursIdValiderPostRequest.getCommission()
+                : null;
+        log.info("✅ Validation vendeur {} - Commission: {}", id, commission);
 
         AdminVendeursIdValiderPost200Response response =
-                vendeurAdminService.validerVendeur(id);
+                vendeurAdminService.validerVendeur(id, commission);
 
         log.info("✅ Vendeur {} validé avec succès", id);
 
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * PUT /admin/vendeurs/{id}/commission - Régler/modifier la commission fixe (prix de livraison) du vendeur
+     */
+    @Override
+    public ResponseEntity<VendeurDTO> adminSetCommission(
+            Long id,
+            AdminSetCommissionRequest adminSetCommissionRequest) {
+        log.info("💰 Commission vendeur {} = {}", id, adminSetCommissionRequest.getCommission());
+
+        VendeurDTO vendeur = vendeurAdminService.setCommission(id, adminSetCommissionRequest.getCommission());
+
+        return ResponseEntity.ok(vendeur);
     }
 
     /**

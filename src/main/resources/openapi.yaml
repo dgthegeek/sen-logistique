@@ -1011,7 +1011,7 @@ paths:
       tags:
         - Admin - Vendeurs
       summary: Valider un vendeur
-      description: Change le statut du vendeur Ã  ACTIF, il peut dÃ©sormais utiliser la plateforme
+      description: Change le statut du vendeur à ACTIF et fixe sa commission (prix de livraison)
       parameters:
         - name: id
           in: path
@@ -1019,6 +1019,18 @@ paths:
           schema:
             type: integer
             format: int64
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                commission:
+                  type: number
+                  format: decimal
+                  description: "Commission fixe (prix de livraison) du partenaire"
+                  example: 1500
       responses:
         '200':
           description: Vendeur validÃ©
@@ -1048,6 +1060,47 @@ paths:
           $ref: '#/components/responses/UnauthorizedError'
         '403':
           $ref: '#/components/responses/ForbiddenError'
+
+  /admin/vendeurs/{id}/commission:
+    put:
+      tags:
+        - Admin - Vendeurs
+      operationId: adminSetCommission
+      summary: Définir/modifier la commission (prix de livraison) d'un vendeur
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [commission]
+              properties:
+                commission:
+                  type: number
+                  format: decimal
+                  example: 1500
+      responses:
+        '200':
+          description: Commission mise à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VendeurDTO'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - bearerAuth: [ ]
 
   /admin/vendeurs/{id}/suspendre:
     post:
@@ -4127,6 +4180,11 @@ components:
           type: number
           format: decimal
           example: 125000.00
+        commissionFixe:
+          type: number
+          format: decimal
+          description: "Commission fixe = prix de livraison de ce partenaire"
+          example: 1500
         raisonSuspension:
           type: string
           example: "Non-paiement rÃ©pÃ©tÃ© des frais de livraison"
@@ -5230,6 +5288,10 @@ components:
         soldeEnAttente:
           type: number
           format: decimal
+        commissionFixe:
+          type: number
+          format: decimal
+          description: "Commission fixe = prix de livraison de ce partenaire"
 
     UpdateProfilRequest:
       type: object
