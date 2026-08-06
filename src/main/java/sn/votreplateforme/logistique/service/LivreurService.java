@@ -41,6 +41,30 @@ public class LivreurService {
     private final LivreurRepository livreurRepository;
     private final StockService stockService;
     private final TelegramService telegramService;
+    private final VersementLivreurService versementLivreurService;
+
+    /**
+     * Historique complet des livraisons du livreur connecté (tous statuts, ou
+     * filtré par statut). Sert à l'écran "Historique" du livreur.
+     */
+    @Transactional(readOnly = true)
+    public List<CommandeLivreur> historique(sn.votreplateforme.logistique.dto.StatutLivraison statutDto) {
+        Livreur livreur = getCurrentLivreur();
+
+        List<Livraison> livraisons = (statutDto != null)
+                ? livraisonRepository.findByLivreur_IdAndStatutOrderByDateAssignationDesc(
+                        livreur.getId(), StatutLivraison.valueOf(statutDto.name()))
+                : livraisonRepository.findByLivreur_IdOrderByDateAssignationDesc(livreur.getId());
+
+        return livraisons.stream().map(this::mapToCommandeLivreur).collect(Collectors.toList());
+    }
+
+    /** Chiffre d'affaires et solde à régler du livreur connecté. */
+    @Transactional(readOnly = true)
+    public sn.votreplateforme.logistique.dto.LivreurFinances mesFinances() {
+        Livreur livreur = getCurrentLivreur();
+        return versementLivreurService.mesFinances(livreur.getId());
+    }
 
     @Transactional(readOnly = true)
     public List<CommandeLivreur> mesLivraisons(sn.votreplateforme.logistique.dto.StatutLivraison statutDto) {

@@ -52,4 +52,9 @@ public class CloseurController implements CloseurApi {
     public ResponseEntity<CommandeCloseur> closeurAnnuler(Long id, CommentaireRequest commentaireRequest) {
         return ResponseEntity.ok(closingService.annuler(id, commentaireRequest));
     }
+
+    @Override
+    public ResponseEntity<List<CommandeCloseur>> closeurHistorique() {
+        return ResponseEntity.ok(closingService.historique());
+    }
 }

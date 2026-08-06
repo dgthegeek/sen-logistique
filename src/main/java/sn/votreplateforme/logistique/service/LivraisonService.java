@@ -68,17 +68,17 @@ public class LivraisonService {
         // 2. Déterminer le vendeur
         Vendeur vendeur;
 
-        if (userConnecte instanceof Admin) {
-            // Admin → doit fournir telephoneVendeur
+        if (userConnecte instanceof Admin || userConnecte instanceof Dispatcheur) {
+            // Admin / Coordinateur logistique → doit fournir telephoneVendeur
             if (request.getTelephoneVendeur() == null || request.getTelephoneVendeur().isEmpty()) {
-                throw new BadRequestException("Le champ telephoneVendeur est requis pour un admin");
+                throw new BadRequestException("Le champ telephoneVendeur est requis pour créer une commande au nom d'un vendeur");
             }
 
             vendeur = vendeurRepository.findByTelephone(request.getTelephoneVendeur())
                     .orElseThrow(() -> new NotFoundException("Vendeur non trouvé : " + request.getTelephoneVendeur()));
 
-            log.info("👤 Admin {} crée une livraison pour le vendeur {}",
-                    telephoneConnecte, request.getTelephoneVendeur());
+            log.info("👤 {} {} crée une livraison pour le vendeur {}",
+                    userConnecte.getRole(), telephoneConnecte, request.getTelephoneVendeur());
 
         } else if (userConnecte instanceof Vendeur) {
             // Vendeur → utilise son propre compte (ignore telephoneVendeur)

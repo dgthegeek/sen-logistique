@@ -262,6 +262,28 @@ public class Livraison {
         this.lignes.add(ligne);
     }
 
+    // ==================== VERSEMENT LIVREUR (cash COD reversé) ====================
+
+    /**
+     * true = le cash collecté sur cette livraison a été reversé par le livreur
+     * au coordinateur/admin. Tant que false, il compte dans le "solde à régler".
+     */
+    @Column(name = "verse_livreur", nullable = false)
+    private Boolean verseLivreur = false;
+
+    /**
+     * Date à laquelle le cash de cette livraison a été reversé.
+     */
+    @Column(name = "date_versement_livreur")
+    private LocalDateTime dateVersementLivreur;
+
+    /**
+     * Versement (remise de cash) auquel cette livraison est rattachée, une fois réglée.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "versement_id")
+    private VersementLivreur versement;
+
     // ==================== APRÈS LIVRAISON ====================
 
     /**
