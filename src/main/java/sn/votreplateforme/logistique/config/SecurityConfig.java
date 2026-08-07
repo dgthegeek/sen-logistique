@@ -108,6 +108,12 @@ public class SecurityConfig {
 
                 // ==================== ENDPOINTS ADMIN ====================
 
+                // Le coordinateur logistique (dispatcheur) crée des commandes exactement
+                // comme l'admin : il doit pouvoir LIRE la liste des vendeurs et des
+                // produits pour les sélectionner (lecture seule, création via /dispatch).
+                .requestMatchers(HttpMethod.GET, "/admin/vendeurs", "/admin/produits")
+                    .hasAnyRole("ADMIN", "DISPATCHEUR")
+
                 // Endpoints admin - Nécessite rôle ADMIN
                 .requestMatchers("/admin/**").hasRole("ADMIN")
                 

@@ -2497,6 +2497,338 @@ paths:
         - bearerAuth: [ ]
 
   # ============================================
+  # COORDINATEUR LOGISTIQUE (ex-Dispatcheur) : historique, création, finances
+  # ============================================
+  /dispatch/commandes:
+    get:
+      tags:
+        - Coordinateur
+      operationId: coordinateurHistorique
+      summary: Historique des commandes (filtrable)
+      description: Liste paginée de toutes les commandes, filtrable par statut et date, pour le coordinateur logistique ou l'admin.
+      parameters:
+        - name: statut
+          in: query
+          schema:
+            $ref: '#/components/schemas/StatutLivraison'
+        - name: date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: Liste des commandes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageLivraison'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - bearerAuth: [ ]
+    post:
+      tags:
+        - Coordinateur
+      operationId: coordinateurCreerCommande
+      summary: Créer une commande (coordinateur)
+      description: Le coordinateur logistique crée une commande pour le compte d'un vendeur (telephoneVendeur requis).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateLivraisonRequest'
+      responses:
+        '201':
+          description: Commande créée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LivraisonResponse'
+        '400':
+          description: Données invalides
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - bearerAuth: [ ]
+
+  /dispatch/finances/livreurs:
+    get:
+      tags:
+        - Coordinateur
+      operationId: coordinateurSoldesLivreurs
+      summary: Soldes de cash à régler par livreur
+      responses:
+        '200':
+          description: Situation financière de chaque livreur
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LivreurSolde'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - bearerAuth: [ ]
+
+  /dispatch/finances/livreurs/{livreurId}/verser:
+    post:
+      tags:
+        - Coordinateur
+      operationId: coordinateurVerserLivreur
+      summary: Marquer le cash d'un livreur comme versé (remet le solde à zéro)
+      parameters:
+        - name: livreurId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerserLivreurRequest'
+      responses:
+        '200':
+          description: Versement enregistré
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersementLivreur'
+        '400':
+          description: Aucun montant à verser
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - bearerAuth: [ ]
+
+  /dispatch/finances/versements:
+    get:
+      tags:
+        - Coordinateur
+      operationId: coordinateurVersements
+      summary: Historique des versements
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: Historique paginé des versements
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageVersement'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - bearerAuth: [ ]
+
+  # ============================================
+  # ADMIN - FINANCES LIVREURS (mêmes que coordinateur)
+  # ============================================
+  /admin/finances/livreurs:
+    get:
+      tags:
+        - Admin - Finances
+      operationId: adminSoldesLivreurs
+      summary: Soldes de cash à régler par livreur
+      responses:
+        '200':
+          description: Situation financière de chaque livreur
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LivreurSolde'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - bearerAuth: [ ]
+
+  /admin/finances/livreurs/{livreurId}/verser:
+    post:
+      tags:
+        - Admin - Finances
+      operationId: adminVerserLivreur
+      summary: Marquer le cash d'un livreur comme versé (remet le solde à zéro)
+      parameters:
+        - name: livreurId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerserLivreurRequest'
+      responses:
+        '200':
+          description: Versement enregistré
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersementLivreur'
+        '400':
+          description: Aucun montant à verser
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - bearerAuth: [ ]
+
+  /admin/finances/versements:
+    get:
+      tags:
+        - Admin - Finances
+      operationId: adminVersementsLivreur
+      summary: Historique des versements de livreurs
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: Historique paginé des versements
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageVersement'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - bearerAuth: [ ]
+
+  # ============================================
+  # LIVREUR - Historique & finances personnelles
+  # ============================================
+  /livreur/historique:
+    get:
+      tags:
+        - Livreur
+      operationId: livreurHistorique
+      summary: Historique complet des livraisons du livreur
+      parameters:
+        - name: statut
+          in: query
+          description: Filtrer par statut (sinon toutes)
+          schema:
+            $ref: '#/components/schemas/StatutLivraison'
+      responses:
+        '200':
+          description: Historique des livraisons
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CommandeLivreur'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+      security:
+        - bearerAuth: [ ]
+
+  /livreur/finances:
+    get:
+      tags:
+        - Livreur
+      operationId: livreurFinances
+      summary: Chiffre d'affaires et solde à régler du livreur
+      responses:
+        '200':
+          description: Situation financière du livreur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LivreurFinances'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+      security:
+        - bearerAuth: [ ]
+
+  # ============================================
+  # CLOSEUR - Historique de ses commandes closées
+  # ============================================
+  /closeur/historique:
+    get:
+      tags:
+        - Closeur
+      operationId: closeurHistorique
+      summary: Historique des commandes prises en charge par le closeur
+      responses:
+        '200':
+          description: Commandes closées par le closeur
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CommandeCloseur'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+      security:
+        - bearerAuth: [ ]
+
+  # ============================================
   # ADMIN - EQUIPE (closeurs & livreurs)
   # ============================================
   /admin/closeurs:
@@ -5534,4 +5866,115 @@ components:
               type: string
             actif:
               type: boolean
+
+    # ============================================
+    # FINANCES LIVREURS (versement du cash COD)
+    # ============================================
+    LivreurSolde:
+      type: object
+      description: >
+        Situation financière d'un livreur vis-à-vis du coordinateur/admin :
+        cash collecté non encore reversé (solde à régler) + cumuls.
+      properties:
+        livreurId:
+          type: integer
+          format: int64
+        nom:
+          type: string
+        prenom:
+          type: string
+        telephone:
+          type: string
+        soldeARegler:
+          type: number
+          format: decimal
+          description: Cash collecté (COD) non encore reversé — ce que le livreur doit verser.
+        nombreLivraisonsNonReglees:
+          type: integer
+          description: Nombre de livraisons livrées dont le cash n'a pas encore été reversé.
+        totalCollecte:
+          type: number
+          format: decimal
+          description: Cash total collecté (cumulé) sur toutes les livraisons livrées.
+        totalVerse:
+          type: number
+          format: decimal
+          description: Cash total déjà reversé (cumulé).
+
+    VerserLivreurRequest:
+      type: object
+      properties:
+        commentaire:
+          type: string
+          description: Commentaire optionnel sur le versement.
+
+    VersementLivreur:
+      type: object
+      description: Trace d'un versement de cash effectué par un livreur.
+      properties:
+        id:
+          type: integer
+          format: int64
+        livreurId:
+          type: integer
+          format: int64
+        livreurNom:
+          type: string
+        montant:
+          type: number
+          format: decimal
+        nombreLivraisons:
+          type: integer
+        dateVersement:
+          type: string
+          format: date-time
+        effectuePar:
+          type: string
+        effectueParRole:
+          type: string
+        commentaire:
+          type: string
+
+    PageVersement:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/VersementLivreur'
+        page:
+          type: integer
+        size:
+          type: integer
+        totalElements:
+          type: integer
+        totalPages:
+          type: integer
+
+    LivreurFinances:
+      type: object
+      description: Vue financière du livreur pour lui-même (chiffre d'affaires et solde à régler).
+      properties:
+        totalCollecte:
+          type: number
+          format: decimal
+          description: Chiffre d'affaires total encaissé (cash COD des livraisons livrées).
+        totalVerse:
+          type: number
+          format: decimal
+          description: Total déjà reversé au coordinateur/admin.
+        soldeARegler:
+          type: number
+          format: decimal
+          description: Reste à reverser (cash encore en poche).
+        nombreLivraisons:
+          type: integer
+          description: Nombre de livraisons réussies (LIVREE).
+        nombreLivraisonsNonReglees:
+          type: integer
+        versements:
+          type: array
+          description: Historique de ses versements.
+          items:
+            $ref: '#/components/schemas/VersementLivreur'
 

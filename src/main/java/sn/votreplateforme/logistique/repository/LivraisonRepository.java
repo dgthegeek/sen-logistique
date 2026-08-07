@@ -78,6 +78,43 @@ public interface LivraisonRepository extends JpaRepository<Livraison, Long> {
     /** Nombre de livraisons en cours pour un livreur. */
     long countByLivreur_IdAndStatutIn(Long livreurId, List<StatutLivraison> statuts);
 
+    /** Livraisons d'un livreur filtrées par statut (historique). */
+    List<Livraison> findByLivreur_IdAndStatutOrderByDateAssignationDesc(
+            Long livreurId, StatutLivraison statut);
+
+    // ==================== VERSEMENTS LIVREUR (cash COD à reverser) ====================
+
+    /**
+     * Livraisons livrées d'un livreur dont le cash n'a pas encore été reversé
+     * (celles qui composent le "solde à régler"). Sert à la fois au calcul du
+     * solde et à leur marquage lors d'un versement.
+     */
+    List<Livraison> findByLivreur_IdAndStatutAndVerseLivreurFalse(
+            Long livreurId, StatutLivraison statut);
+
+    /** Somme du cash collecté non encore reversé par un livreur (= solde à régler). */
+    @Query("SELECT COALESCE(SUM(l.cashCollecte), 0) FROM Livraison l "
+            + "WHERE l.livreur.id = :livreurId AND l.statut = 'LIVREE' AND l.verseLivreur = false")
+    BigDecimal soldeAReglerLivreur(@Param("livreurId") Long livreurId);
+
+    /** Nombre de livraisons livrées non encore réglées pour un livreur. */
+    long countByLivreur_IdAndStatutAndVerseLivreurFalse(Long livreurId, StatutLivraison statut);
+
+    /** Cash total collecté (cumulé) par un livreur sur toutes ses livraisons livrées. */
+    @Query("SELECT COALESCE(SUM(l.cashCollecte), 0) FROM Livraison l "
+            + "WHERE l.livreur.id = :livreurId AND l.statut = 'LIVREE'")
+    BigDecimal totalCollecteLivreur(@Param("livreurId") Long livreurId);
+
+    /** Cash total déjà reversé (cumulé) par un livreur. */
+    @Query("SELECT COALESCE(SUM(l.cashCollecte), 0) FROM Livraison l "
+            + "WHERE l.livreur.id = :livreurId AND l.statut = 'LIVREE' AND l.verseLivreur = true")
+    BigDecimal totalVerseLivreur(@Param("livreurId") Long livreurId);
+
+    // ==================== HISTORIQUE CLOSEUR ====================
+
+    /** Livraisons prises en charge par un closeur (historique de son closing). */
+    List<Livraison> findByCloseur_IdOrderByDateCreationDesc(Long closeurId);
+
     // ==================== STATS / DASHBOARD ====================
 
     long countByLivreur_IdAndStatut(Long livreurId, StatutLivraison statut);

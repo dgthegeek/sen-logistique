@@ -8,8 +8,10 @@ import sn.votreplateforme.logistique.api.AdminFinancesApi;
 import sn.votreplateforme.logistique.dto.*;
 import sn.votreplateforme.logistique.service.FinanceService;
 import sn.votreplateforme.logistique.service.TransactionService;
+import sn.votreplateforme.logistique.service.VersementLivreurService;
 
 import java.time.LocalDate;
+import java.util.List;
 
 /**
  * Controller Admin Finances - Gestion financière
@@ -29,6 +31,7 @@ public class AdminFinanceController implements AdminFinancesApi {
     
     private final FinanceService financeService;
     private final TransactionService transactionService;
+    private final VersementLivreurService versementLivreurService;
     
     /**
      * GET /admin/finances/dashboard
@@ -130,11 +133,32 @@ public class AdminFinanceController implements AdminFinancesApi {
             size
         );
         
-        log.info("✅ Historique récupéré - {} transactions sur {} pages", 
+        log.info("✅ Historique récupéré - {} transactions sur {} pages",
             response.getContent().size(),
             response.getTotalPages()
         );
-        
+
         return ResponseEntity.ok(response);
+    }
+
+    // ==================== FINANCES LIVREURS (cash COD à reverser) ====================
+
+    /** GET /admin/finances/livreurs — soldes de cash à régler par livreur. */
+    @Override
+    public ResponseEntity<List<LivreurSolde>> adminSoldesLivreurs() {
+        return ResponseEntity.ok(versementLivreurService.soldesLivreurs());
+    }
+
+    /** POST /admin/finances/livreurs/{livreurId}/verser — remet le solde du livreur à zéro. */
+    @Override
+    public ResponseEntity<VersementLivreur> adminVerserLivreur(
+            Long livreurId, VerserLivreurRequest verserLivreurRequest) {
+        return ResponseEntity.ok(versementLivreurService.verserLivreur(livreurId, verserLivreurRequest));
+    }
+
+    /** GET /admin/finances/versements — historique des versements. */
+    @Override
+    public ResponseEntity<PageVersement> adminVersementsLivreur(Integer page, Integer size) {
+        return ResponseEntity.ok(versementLivreurService.historique(page, size));
     }
 }

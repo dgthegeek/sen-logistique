@@ -77,6 +77,25 @@ public class ClosingService {
         return commandes.subList(from, to);
     }
 
+    /**
+     * Historique des commandes prises en charge par le closeur connecté
+     * (toutes celles dont il est le closeur, quel que soit le statut).
+     */
+    @Transactional(readOnly = true)
+    public List<CommandeCloseur> historique() {
+        Closeur closeur = currentCloseur();
+        if (closeur == null) {
+            return List.of();
+        }
+        List<CommandeCloseur> commandes = livraisonRepository
+                .findByCloseur_IdOrderByDateCreationDesc(closeur.getId())
+                .stream()
+                .map(this::mapToCommandeCloseur)
+                .collect(Collectors.toList());
+        log.info("Historique closeur {} : {} commande(s)", closeur.getNomComplet(), commandes.size());
+        return commandes;
+    }
+
     @Transactional
     public CommandeCloseur appeler(Long id) {
         Livraison l = getCommande(id);

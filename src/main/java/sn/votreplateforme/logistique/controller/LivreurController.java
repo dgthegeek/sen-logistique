@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.RestController;
 import sn.votreplateforme.logistique.api.LivreurApi;
 import sn.votreplateforme.logistique.dto.CommandeLivreur;
 import sn.votreplateforme.logistique.dto.EchecRequest;
+import sn.votreplateforme.logistique.dto.LivreurFinances;
 import sn.votreplateforme.logistique.dto.LivrerRequest;
 import sn.votreplateforme.logistique.dto.StatutLivraison;
 import sn.votreplateforme.logistique.service.LivreurService;
@@ -41,5 +42,15 @@ public class LivreurController implements LivreurApi {
     @Override
     public ResponseEntity<CommandeLivreur> livreurEchec(Long id, EchecRequest echecRequest) {
         return ResponseEntity.ok(livreurService.echec(id, echecRequest));
+    }
+
+    @Override
+    public ResponseEntity<List<CommandeLivreur>> livreurHistorique(StatutLivraison statut) {
+        return ResponseEntity.ok(livreurService.historique(statut));
+    }
+
+    @Override
+    public ResponseEntity<LivreurFinances> livreurFinances() {
+        return ResponseEntity.ok(livreurService.mesFinances());
     }
 }
