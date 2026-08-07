@@ -73,13 +73,10 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
       TWILIO_ENABLED: ${TWILIO_ENABLED:-false}
-
-      # Notifications Telegram — un seul bot pour toute la plateforme.
-      # Renseigner ces 3 valeurs dans le .env du VPS puis redéployer.
       TELEGRAM_ENABLED: ${TELEGRAM_ENABLED:-false}
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
       TELEGRAM_BOT_USERNAME: ${TELEGRAM_BOT_USERNAME:-}
-
+      
       # ⚡ JVM NORMAL pour 8 GB RAM - Fini les OutOfMemoryError!
       JAVA_OPTS: >-
         -Xms512m
