@@ -193,6 +193,20 @@ public class ZoneService {
     /**
      * Mapper Entity Quartier → DTO Quartier
      */
+    /**
+     * Tous les quartiers actifs (pour l'affichage public des zones couvertes),
+     * triés par zone puis par nom.
+     */
+    public List<Quartier> getTousQuartiersActifs() {
+        return quartierRepository.findByActifTrue().stream()
+                .map(this::mapQuartierToDto)
+                .sorted(java.util.Comparator
+                        .comparing((Quartier q) -> q.getZone() != null && q.getZone().getNom() != null
+                                ? q.getZone().getNom() : "")
+                        .thenComparing(q -> q.getNom() != null ? q.getNom() : ""))
+                .collect(Collectors.toList());
+    }
+
     private Quartier mapQuartierToDto(sn.votreplateforme.logistique.entity.Quartier entity) {
         Quartier dto = new Quartier();
         dto.setId(entity.getId());
