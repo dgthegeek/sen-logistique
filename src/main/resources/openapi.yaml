@@ -2829,6 +2829,166 @@ paths:
         - bearerAuth: [ ]
 
   # ============================================
+  # ADMIN - MAINTENANCE (suppression de données de test)
+  # ============================================
+  /admin/maintenance/livraisons/{id}:
+    delete:
+      tags:
+        - Admin - Maintenance
+      operationId: maintenanceSupprimerLivraison
+      summary: Supprimer une livraison (et ses lignes)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Livraison supprimée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceResult'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - bearerAuth: [ ]
+
+  /admin/maintenance/transactions/{id}:
+    delete:
+      tags:
+        - Admin - Maintenance
+      operationId: maintenanceSupprimerTransaction
+      summary: Supprimer une transaction
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Transaction supprimée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceResult'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - bearerAuth: [ ]
+
+  /admin/maintenance/membres/{userId}:
+    delete:
+      tags:
+        - Admin - Maintenance
+      operationId: maintenanceSupprimerMembre
+      summary: Supprimer un membre du staff (closeur, livreur ou coordinateur)
+      description: >
+        Les livraisons rattachées ne sont pas supprimées : leur lien vers ce membre
+        est simplement retiré. Les admins ne peuvent pas être supprimés ici.
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Membre supprimé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceResult'
+        '400':
+          description: Suppression non autorisée pour ce type de compte
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - bearerAuth: [ ]
+
+  /admin/maintenance/vendeurs/{id}/impact:
+    get:
+      tags:
+        - Admin - Maintenance
+      operationId: maintenanceImpactVendeur
+      summary: Aperçu de l'impact avant suppression d'un vendeur
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Impact estimé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VendeurImpact'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - bearerAuth: [ ]
+
+  /admin/maintenance/vendeurs/{id}:
+    delete:
+      tags:
+        - Admin - Maintenance
+      operationId: maintenanceSupprimerVendeur
+      summary: Supprimer un vendeur et TOUTES ses données
+      description: >
+        Supprime en cascade les livraisons, transactions et produits du vendeur,
+        puis le compte vendeur. Opération irréversible.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Vendeur et données supprimés
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuppressionVendeurResult'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - bearerAuth: [ ]
+
+  # ============================================
   # ADMIN - EQUIPE (closeurs & livreurs)
   # ============================================
   /admin/closeurs:
@@ -5977,4 +6137,44 @@ components:
           description: Historique de ses versements.
           items:
             $ref: '#/components/schemas/VersementLivreur'
+
+    # ============================================
+    # MAINTENANCE (suppression de données — admin)
+    # ============================================
+    MaintenanceResult:
+      type: object
+      properties:
+        message:
+          type: string
+
+    VendeurImpact:
+      type: object
+      description: Aperçu de ce qui sera supprimé avec un vendeur.
+      properties:
+        vendeurId:
+          type: integer
+          format: int64
+        nom:
+          type: string
+        livraisons:
+          type: integer
+          description: Nombre de livraisons rattachées (seront supprimées).
+        transactions:
+          type: integer
+          description: Nombre de transactions rattachées (seront supprimées).
+        produits:
+          type: integer
+          description: Nombre de produits rattachés (seront supprimés).
+
+    SuppressionVendeurResult:
+      type: object
+      properties:
+        message:
+          type: string
+        livraisonsSupprimees:
+          type: integer
+        transactionsSupprimees:
+          type: integer
+        produitsSupprimes:
+          type: integer
 
