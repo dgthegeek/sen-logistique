@@ -1650,6 +1650,24 @@ paths:
                 items:
                   $ref: '#/components/schemas/Quartier'
 
+  /quartiers:
+    get:
+      tags:
+        - Zones
+      operationId: quartiersGet
+      summary: Liste de tous les quartiers actifs (zones de couverture)
+      description: Utilisé par la page d'accueil pour afficher dynamiquement les zones couvertes.
+      security: []
+      responses:
+        '200':
+          description: Liste des quartiers actifs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Quartier'
+
   /tarifs/calculer:
     post:
       tags:

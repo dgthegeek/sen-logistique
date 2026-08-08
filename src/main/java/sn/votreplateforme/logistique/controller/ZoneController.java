@@ -45,6 +45,15 @@ public class ZoneController implements ZonesApi {
     }
 
     /**
+     * GET /api/quartiers
+     * Tous les quartiers actifs (zones de couverture affichées sur l'accueil).
+     */
+    @Override
+    public ResponseEntity<List<Quartier>> quartiersGet() {
+        return ResponseEntity.ok(zoneService.getTousQuartiersActifs());
+    }
+
+    /**
      * GET /api/quartiers/commune/{commune}
      * Liste les quartiers d'une commune (pour auto-complétion)
      *
