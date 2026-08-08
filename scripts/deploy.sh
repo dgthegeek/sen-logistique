@@ -47,6 +47,23 @@ echo -e "${BLUE}🚀 Démarrage de la nouvelle version...${NC}"
 docker compose -f docker-compose.prod.yml up -d
 
 # ==========================================
+# 4bis. Reconnecter le reverse-proxy
+# Le conteneur "app" est recréé avec une NOUVELLE IP interne. Un reverse-proxy
+# (nginx/front) attaché au même réseau garde l'ancienne IP en cache → 502.
+# On redémarre donc les autres conteneurs du réseau pour qu'ils re-résolvent
+# l'adresse de "app". Sans effet si aucun proxy n'est présent.
+# ==========================================
+echo -e "${YELLOW}🔁 Reconnexion du reverse-proxy (re-résolution de l'IP backend)...${NC}"
+PROXIES=$(docker ps --filter "network=sen-logistique-network" --format "{{.Names}}" \
+  | grep -vE "^sen-logistique-app$|^sen-logistique-db$" || true)
+if [ -n "$PROXIES" ]; then
+    echo -e "${YELLOW}   Conteneurs à redémarrer : ${PROXIES}${NC}"
+    echo "$PROXIES" | xargs -r docker restart || true
+else
+    echo -e "${YELLOW}   Aucun proxy détecté sur le réseau (rien à faire).${NC}"
+fi
+
+# ==========================================
 # 5. Attendre que les services soient prêts
 # ==========================================
 echo -e "${YELLOW}⏳ Attente du démarrage des services...${NC}"
