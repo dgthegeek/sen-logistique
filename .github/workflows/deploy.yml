@@ -106,6 +106,9 @@ jobs:
           JWT_EXPIRATION=86400000
           APP_VERSION=${{ env.DOCKER_IMAGE_TAG }}
           TWILIO_ENABLED=false
+          TELEGRAM_ENABLED=true
+          TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_BOT_USERNAME=${{ secrets.TELEGRAM_BOT_USERNAME }}
           ENVEOF
           EOF
       
