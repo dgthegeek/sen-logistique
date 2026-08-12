@@ -149,6 +149,12 @@ public class AdminFinanceController implements AdminFinancesApi {
         return ResponseEntity.ok(versementLivreurService.soldesLivreurs());
     }
 
+    /** GET /admin/finances/partenaires — soldes à verser à chaque vendeur. */
+    @Override
+    public ResponseEntity<List<PartenaireSolde>> adminPartenairesSoldes() {
+        return ResponseEntity.ok(financeService.getSoldesPartenaires());
+    }
+
     /** POST /admin/finances/livreurs/{livreurId}/verser — remet le solde du livreur à zéro. */
     @Override
     public ResponseEntity<VersementLivreur> adminVerserLivreur(

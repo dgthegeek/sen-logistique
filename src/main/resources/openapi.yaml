@@ -2745,6 +2745,29 @@ paths:
       security:
         - bearerAuth: [ ]
 
+  /admin/finances/partenaires:
+    get:
+      tags:
+        - Admin - Finances
+      operationId: adminPartenairesSoldes
+      summary: Soldes à verser aux vendeurs (partenaires)
+      description: Liste des vendeurs avec la somme que la plateforme doit encore leur verser (solde disponible).
+      responses:
+        '200':
+          description: Soldes des partenaires
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PartenaireSolde'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - bearerAuth: [ ]
+
   /admin/finances/versements:
     get:
       tags:
@@ -6195,4 +6218,30 @@ components:
           type: integer
         produitsSupprimes:
           type: integer
+
+    PartenaireSolde:
+      type: object
+      description: Somme que la plateforme doit encore verser à un vendeur (partenaire).
+      properties:
+        vendeurId:
+          type: integer
+          format: int64
+        nom:
+          type: string
+        prenom:
+          type: string
+        nomBoutique:
+          type: string
+        telephone:
+          type: string
+        soldeAPayer:
+          type: number
+          format: decimal
+          description: Solde disponible = chiffre d'affaires cumulé − total déjà payé.
+        chiffreAffaires:
+          type: number
+          format: decimal
+        totalPaye:
+          type: number
+          format: decimal
 
