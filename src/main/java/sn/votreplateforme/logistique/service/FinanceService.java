@@ -217,4 +217,31 @@ public class FinanceService {
             default -> today.atStartOfDay();
         };
     }
+
+    /**
+     * Écran "Finance partenaires" : pour chaque vendeur, la somme que la
+     * plateforme lui doit encore (même valeur que sur son propre dashboard,
+     * calculée dynamiquement — jamais un champ figé). Permet à l'admin de
+     * chercher/voir rapidement ce qui est dû à chaque partenaire.
+     */
+    @Transactional(readOnly = true)
+    public List<PartenaireSolde> getSoldesPartenaires() {
+        return vendeurRepository.findAll().stream()
+                .map(v -> {
+                    PartenaireSolde dto = new PartenaireSolde();
+                    dto.setVendeurId(v.getId());
+                    dto.setNom(v.getNom());
+                    dto.setPrenom(v.getPrenom());
+                    dto.setNomBoutique(v.getNomBoutique());
+                    dto.setTelephone(v.getTelephone());
+                    BigDecimal ca = financeCalculator.chiffreAffaires(v);
+                    BigDecimal paye = financeCalculator.totalPaye(v);
+                    dto.setChiffreAffaires(ca);
+                    dto.setTotalPaye(paye);
+                    dto.setSoldeAPayer(ca.subtract(paye));
+                    return dto;
+                })
+                .sorted((a, b) -> b.getSoldeAPayer().compareTo(a.getSoldeAPayer()))
+                .toList();
+    }
 }
