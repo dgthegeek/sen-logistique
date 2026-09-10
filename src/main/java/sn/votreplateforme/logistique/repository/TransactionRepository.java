@@ -61,6 +61,15 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
             LocalDateTime dateFin
     );
 
+    /**
+     * Valeur suivante de la séquence dédiée aux références de transaction.
+     * Atomique par construction (PostgreSQL) : deux appels concurrents ne
+     * renvoient jamais la même valeur, sans avoir besoin de verrou explicite.
+     * Remplace l'ancien "COMPTER puis +1", non sûr en cas d'appels concurrents.
+     */
+    @Query(value = "SELECT nextval('transaction_reference_seq')", nativeQuery = true)
+    long nextReferenceSequence();
+
     // ==================== CALCULS FINANCIERS ====================
 
     @Query("SELECT COALESCE(SUM(t.montant), 0) FROM Transaction t WHERE t.type = 'COMMISSION' AND t.statut = 'EFFECTUE'")

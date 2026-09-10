@@ -56,8 +56,10 @@ public class TransactionService {
     ) {
         log.info("Paiement vendeur {}", vendeurId);
 
-        // 1. Récupérer le vendeur
-        Vendeur vendeur = vendeurRepository.findById(vendeurId)
+        // 1. Récupérer le vendeur en verrouillant sa ligne (SELECT ... FOR UPDATE) : si deux
+        //    paiements pour le même vendeur arrivent en même temps, le second attend que le
+        //    premier ait validé avant de relire le solde, pour ne jamais le payer deux fois.
+        Vendeur vendeur = vendeurRepository.findByIdForUpdate(vendeurId)
             .orElseThrow(() -> new ResourceNotFoundException(
                 "Vendeur non trouvé: " + vendeurId
             ));
@@ -229,24 +231,22 @@ public class TransactionService {
     }
     
     /**
-     * Génère une référence unique de transaction
-     * Format: PAY-YYYYMMDD-XXX
-     * 
+     * Génère une référence unique de transaction.
+     * Format : PAY-YYYYMMDD-XXXXX
+     *
+     * <p>S'appuie sur une séquence PostgreSQL ({@code transaction_reference_seq}),
+     * atomique par construction : deux appels concurrents ne peuvent jamais
+     * obtenir la même valeur. L'ancienne version comptait les transactions du
+     * jour puis ajoutait 1 ("COMPTER puis écrire"), ce qui n'est pas sûr sous
+     * concurrence : plusieurs paiements lancés en même temps pouvaient lire le
+     * même compte avant qu'aucun n'ait validé, produire la même référence, et
+     * faire échouer tous les paiements sauf le premier (contrainte unique).
+     *
      * @return Référence unique
      */
     private String genererReferenceTransaction() {
         String dateStr = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        
-        // Compter les transactions du jour
-        LocalDateTime debutJour = LocalDate.now().atStartOfDay();
-        LocalDateTime finJour = LocalDate.now().atTime(23, 59, 59);
-        
-        long nombreTransactionsJour = transactionRepository
-            .countByDateTransactionBetween(debutJour, finJour);
-        
-        // Incrémenter et formater sur 3 chiffres
-        String numero = String.format("%03d", nombreTransactionsJour + 1);
-        
-        return "PAY-" + dateStr + "-" + numero;
+        long numero = transactionRepository.nextReferenceSequence();
+        return "PAY-" + dateStr + "-" + String.format("%05d", numero);
     }
 }

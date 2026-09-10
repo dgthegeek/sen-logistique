@@ -407,22 +407,18 @@ public class VendeurService {
     }
 
     /**
-     * Génère une référence unique de transaction
-     * Format: DEM-YYYYMMDD-XXX
+     * Génère une référence unique de transaction.
+     * Format : DEM-YYYYMMDD-XXXXX
+     *
+     * <p>S'appuie sur la séquence PostgreSQL {@code transaction_reference_seq}
+     * (atomique, partagée avec {@code TransactionService}), qui évite les
+     * collisions de référence quand plusieurs vendeurs demandent un paiement
+     * au même moment (l'ancienne version comptait les transactions du jour
+     * puis ajoutait 1, non sûr sous concurrence).
      */
     private String genererReferenceTransaction() {
         String dateStr = LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd"));
-
-        // Compter les transactions du jour
-        LocalDateTime debutJour = LocalDate.now().atStartOfDay();
-        LocalDateTime finJour = LocalDate.now().atTime(23, 59, 59);
-
-        long nombreTransactionsJour = transactionRepository
-                .countByDateTransactionBetween(debutJour, finJour);
-
-        // Incrémenter et formater sur 3 chiffres
-        String numero = String.format("%03d", nombreTransactionsJour + 1);
-
-        return "DEM-" + dateStr + "-" + numero;
+        long numero = transactionRepository.nextReferenceSequence();
+        return "DEM-" + dateStr + "-" + String.format("%05d", numero);
     }
 }
