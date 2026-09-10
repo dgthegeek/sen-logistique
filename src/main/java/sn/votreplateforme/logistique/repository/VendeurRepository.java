@@ -1,9 +1,11 @@
 package sn.votreplateforme.logistique.repository;
 
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -18,6 +20,17 @@ import java.util.Optional;
 public interface VendeurRepository extends JpaRepository<Vendeur, Long> {
 
     Optional<Vendeur> findByTelephone(String telephone);
+
+    /**
+     * Verrouille la ligne du vendeur pour la durée de la transaction courante
+     * (SELECT ... FOR UPDATE). Empêche deux paiements concurrents pour le même
+     * vendeur de lire le même solde disponible avant qu'aucun n'ait validé, ce
+     * qui aurait pu le payer deux fois. Un second appel concurrent attend que
+     * le premier ait validé, puis relit un solde à jour (déjà remis à zéro).
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT v FROM Vendeur v WHERE v.id = :id")
+    Optional<Vendeur> findByIdForUpdate(@Param("id") Long id);
 
     List<Vendeur> findBySoldeEnAttenteGreaterThan(BigDecimal montant);
 
