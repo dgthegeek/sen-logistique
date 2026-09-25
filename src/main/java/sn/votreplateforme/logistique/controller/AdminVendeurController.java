@@ -35,6 +35,7 @@ public class AdminVendeurController implements AdminVendeursApi {
     private final BilanVendeurService bilanVendeurService;
     private final BilanVendeurPdfService bilanVendeurPdfService;
     private final sn.votreplateforme.logistique.service.ClassementService classementService;
+    private final sn.votreplateforme.logistique.service.PartnerApiService partnerApiService;
 
     /**
      * GET /admin/vendeurs/en-attente
@@ -226,5 +227,17 @@ public class AdminVendeurController implements AdminVendeursApi {
     @Override
     public ResponseEntity<ClassementResponse> adminClassement() {
         return ResponseEntity.ok(classementService.getClassementAdmin());
+    }
+
+    // ===== Clé API partenaire (support onboarding intégrations externes) =====
+
+    @Override
+    public ResponseEntity<ApiKeyResponse> adminVendeurApiKeyGet(Long id) {
+        return ResponseEntity.ok(partnerApiService.getStatutCle(id));
+    }
+
+    @Override
+    public ResponseEntity<ApiKeyResponse> adminVendeurApiKeyRegenererPost(Long id) {
+        return ResponseEntity.ok(partnerApiService.regenererCle(id));
     }
 }

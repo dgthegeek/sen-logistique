@@ -68,6 +68,10 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/quartiers/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/tarifs/calculer").permitAll()
                 
+                // Intégrations partenaires (Shopify, scripts externes...) — pas de session
+                // JWT, l'authentification se fait via clé API vérifiée dans le controller.
+                .requestMatchers("/partner/**").permitAll()
+
                 // Swagger UI - Accessible en développement
                 .requestMatchers(
                     "/swagger-ui/**",

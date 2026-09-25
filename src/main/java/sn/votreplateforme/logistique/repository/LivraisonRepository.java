@@ -115,6 +115,15 @@ public interface LivraisonRepository extends JpaRepository<Livraison, Long> {
     /** Livraisons prises en charge par un closeur (historique de son closing). */
     List<Livraison> findByCloseur_IdOrderByDateCreationDesc(Long closeurId);
 
+    /**
+     * Idempotence des créations de commande via intégration externe
+     * (Shopify, API partenaire générique) : si une commande a déjà été créée
+     * pour ce (vendeur, origine, référence externe), on la renvoie telle
+     * quelle au lieu d'en créer une seconde (webhook redélivré, retry réseau...).
+     */
+    java.util.Optional<Livraison> findByVendeurAndOrigineAndOrigineRef(
+            Vendeur vendeur, String origine, String origineRef);
+
     // ==================== STATS / DASHBOARD ====================
 
     long countByLivreur_IdAndStatut(Long livreurId, StatutLivraison statut);

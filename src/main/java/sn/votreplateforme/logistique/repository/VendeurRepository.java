@@ -21,6 +21,9 @@ public interface VendeurRepository extends JpaRepository<Vendeur, Long> {
 
     Optional<Vendeur> findByTelephone(String telephone);
 
+    /** Résout le vendeur propriétaire d'une clé API d'intégration (Shopify, script...). */
+    Optional<Vendeur> findByApiKey(String apiKey);
+
     /**
      * Verrouille la ligne du vendeur pour la durée de la transaction courante
      * (SELECT ... FOR UPDATE). Empêche deux paiements concurrents pour le même
