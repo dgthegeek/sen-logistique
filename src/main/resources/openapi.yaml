@@ -6516,12 +6516,19 @@ components:
         title:
           type: string
           example: "Ensemble wax"
+        sku:
+          type: string
+          description: >
+            Référence produit renseignée côté Shopify. Doit correspondre
+            exactement au code d'un produit du catalogue Dioks du vendeur
+            (ex. "DKS-00042") pour que la commande soit acceptée.
+          example: "DKS-00042"
         quantity:
           type: integer
           example: 2
         price:
           type: string
-          description: Prix unitaire tel qu'envoyé par Shopify (chaîne de caractères).
+          description: Prix unitaire tel qu'envoyé par Shopify (informatif uniquement — le prix retenu est celui du catalogue Dioks).
           example: "15000.00"
 
     ShopifyOrderWebhook:

@@ -12,14 +12,15 @@ import sn.votreplateforme.logistique.dto.ShopifyCustomer;
 import sn.votreplateforme.logistique.dto.ShopifyLineItem;
 import sn.votreplateforme.logistique.dto.ShopifyOrderWebhook;
 import sn.votreplateforme.logistique.dto.StatutVendeur;
+import sn.votreplateforme.logistique.entity.Produit;
 import sn.votreplateforme.logistique.entity.Vendeur;
 import sn.votreplateforme.logistique.exception.BadRequestException;
 import sn.votreplateforme.logistique.exception.ForbiddenException;
 import sn.votreplateforme.logistique.exception.NotFoundException;
+import sn.votreplateforme.logistique.repository.ProduitRepository;
 import sn.votreplateforme.logistique.repository.VendeurRepository;
 import sn.votreplateforme.logistique.util.ApiKeyGenerator;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -42,6 +43,7 @@ import java.util.stream.Collectors;
 public class PartnerApiService {
 
     private final VendeurRepository vendeurRepository;
+    private final ProduitRepository produitRepository;
     private final LivraisonService livraisonService;
 
     // ==================== GESTION DE LA CLÉ ====================
@@ -97,7 +99,7 @@ public class PartnerApiService {
     @Transactional
     public LivraisonResponse creerCommandeDepuisShopify(String apiKey, ShopifyOrderWebhook payload) {
         Vendeur vendeur = resoudreVendeurParCle(apiKey);
-        CreateLivraisonRequest request = mapperShopify(payload);
+        CreateLivraisonRequest request = mapperShopify(vendeur, payload);
         String origineRef = payload.getId() != null ? String.valueOf(payload.getId()) : null;
         return livraisonService.creerLivraisonPourVendeur(vendeur, request, "SHOPIFY", origineRef);
     }
@@ -127,7 +129,7 @@ public class PartnerApiService {
      * commande passe donc par le tarif "adresse libre" (commission fixe du
      * vendeur), déjà géré nativement par {@link LivraisonService}.
      */
-    private CreateLivraisonRequest mapperShopify(ShopifyOrderWebhook payload) {
+    private CreateLivraisonRequest mapperShopify(Vendeur vendeur, ShopifyOrderWebhook payload) {
         ShopifyAddress adresse = payload.getShippingAddress();
         ShopifyCustomer client = payload.getCustomer();
 
@@ -168,14 +170,67 @@ public class PartnerApiService {
         }
 
         request.setDescriptionProduit(descriptionProduits(payload));
-
-        BigDecimal montant = parserMontant(payload.getTotalPrice(), payload);
-        request.setMontantCOD(montant);
+        request.setItems(resoudreLignesCatalogue(vendeur, payload));
+        // montantCOD volontairement non renseigné : le calcul (prix catalogue
+        // Dioks × quantité + frais de livraison) est fait par la même logique
+        // que pour une commande créée depuis la plateforme — voir plus bas.
 
         request.setNotesPourLivreur(payload.getNote());
         request.setFragile(false);
 
         return request;
+    }
+
+    /**
+     * Résout chaque ligne Shopify vers un produit du catalogue Dioks du
+     * vendeur, via son SKU (= code produit Dioks, ex. "DKS-00042").
+     *
+     * <p>Tout ou rien : si une seule ligne n'a pas de SKU, ou un SKU qui ne
+     * correspond à aucun produit de <b>ce</b> vendeur, toute la commande est
+     * refusée (aucune livraison créée, aucun impact stock/prix). Une commande
+     * acceptée est ensuite traitée exactement comme une commande multi-produits
+     * créée depuis la plateforme : prix = celui enregistré dans Dioks, stock
+     * vérifié et décrémenté pour chaque ligne.
+     */
+    private List<sn.votreplateforme.logistique.dto.LigneCommandeRequest> resoudreLignesCatalogue(
+            Vendeur vendeur, ShopifyOrderWebhook payload) {
+        List<ShopifyLineItem> lignesShopify = payload.getLineItems();
+        if (lignesShopify == null || lignesShopify.isEmpty()) {
+            throw new BadRequestException(
+                    "Commande Shopify " + libelleCommande(payload) + " sans article.");
+        }
+
+        List<sn.votreplateforme.logistique.dto.LigneCommandeRequest> lignes = new java.util.ArrayList<>();
+        for (ShopifyLineItem ligneShopify : lignesShopify) {
+            String sku = ligneShopify.getSku();
+            String titre = ligneShopify.getTitle() != null ? ligneShopify.getTitle() : "Article";
+
+            if (sku == null || sku.isBlank()) {
+                throw new BadRequestException(
+                        "Commande Shopify " + libelleCommande(payload) + " refusée : l'article \""
+                                + titre + "\" n'a pas de SKU renseigné. Chaque produit Shopify doit "
+                                + "avoir pour SKU le code de son produit correspondant dans Dioks (ex. DKS-00042).");
+            }
+
+            Produit produit = produitRepository.findByCode(sku).orElse(null);
+            if (produit == null || produit.getVendeur() == null
+                    || !produit.getVendeur().getId().equals(vendeur.getId())) {
+                throw new BadRequestException(
+                        "Commande Shopify " + libelleCommande(payload) + " refusée : le SKU \"" + sku
+                                + "\" (article \"" + titre + "\") ne correspond à aucun produit de votre "
+                                + "catalogue Dioks. Vérifiez le code produit dans Dioks et le SKU dans Shopify.");
+            }
+
+            int quantite = ligneShopify.getQuantity() != null && ligneShopify.getQuantity() > 0
+                    ? ligneShopify.getQuantity() : 1;
+
+            sn.votreplateforme.logistique.dto.LigneCommandeRequest ligne =
+                    new sn.votreplateforme.logistique.dto.LigneCommandeRequest();
+            ligne.setProduitId(produit.getId());
+            ligne.setQuantite(quantite);
+            lignes.add(ligne);
+        }
+        return lignes;
     }
 
     private String descriptionProduits(ShopifyOrderWebhook payload) {
@@ -187,24 +242,6 @@ public class PartnerApiService {
                 .map(ligne -> (ligne.getQuantity() != null ? ligne.getQuantity() : 1)
                         + "x " + (ligne.getTitle() != null ? ligne.getTitle() : "Article"))
                 .collect(Collectors.joining(", "));
-    }
-
-    private BigDecimal parserMontant(String totalPrice, ShopifyOrderWebhook payload) {
-        if (totalPrice == null || totalPrice.isBlank()) {
-            throw new BadRequestException(
-                    "Commande Shopify " + libelleCommande(payload) + " sans montant total.");
-        }
-        try {
-            BigDecimal montant = new BigDecimal(totalPrice);
-            if (montant.signum() <= 0) {
-                throw new NumberFormatException("montant nul ou négatif");
-            }
-            return montant;
-        } catch (NumberFormatException e) {
-            throw new BadRequestException(
-                    "Montant total Shopify invalide pour la commande " + libelleCommande(payload)
-                            + " : " + totalPrice);
-        }
     }
 
     private String libelleCommande(ShopifyOrderWebhook payload) {
