@@ -44,6 +44,23 @@ public class Livraison {
     @Column(length = 500)
     private String qrCodeUrl;
 
+    /**
+     * Origine de la commande : null si créée depuis l'interface (vendeur ou
+     * admin), "API" pour une intégration générique via clé API, "SHOPIFY"
+     * pour le webhook Shopify.
+     */
+    @Column(length = 30)
+    private String origine;
+
+    /**
+     * Identifiant de la commande côté système externe (ID commande Shopify,
+     * ou clé d'idempotence fournie par le partenaire). Combiné à {@link #origine}
+     * et au vendeur, garantit qu'une même commande externe n'est jamais créée
+     * deux fois (ex. webhook Shopify redélivré).
+     */
+    @Column(name = "origine_ref", length = 150)
+    private String origineRef;
+
     // ==================== VENDEUR ====================
 
     /**

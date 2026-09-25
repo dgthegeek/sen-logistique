@@ -46,6 +46,7 @@ public class VendeurController implements VendeurApi {
     private final BilanVendeurPdfService bilanVendeurPdfService;
     private final sn.votreplateforme.logistique.service.ClassementService classementService;
     private final sn.votreplateforme.logistique.service.TelegramService telegramService;
+    private final sn.votreplateforme.logistique.service.PartnerApiService partnerApiService;
 
     /**
      * GET /vendeur/produits
@@ -322,6 +323,18 @@ public class VendeurController implements VendeurApi {
     @Override
     public ResponseEntity<TelegramStatut> vendeurTelegramDelier() {
         return ResponseEntity.ok(telegramService.delier(getCurrentVendeurEntity()));
+    }
+
+    // ===== Clé API partenaire (intégrations externes) =====
+
+    @Override
+    public ResponseEntity<ApiKeyResponse> vendeurApiKeyGet() {
+        return ResponseEntity.ok(partnerApiService.getStatutCle(getCurrentVendeurEntity()));
+    }
+
+    @Override
+    public ResponseEntity<ApiKeyResponse> vendeurApiKeyRegenererPost() {
+        return ResponseEntity.ok(partnerApiService.regenererCle(getCurrentVendeurEntity()));
     }
 
     private Vendeur getCurrentVendeurEntity() {

@@ -90,6 +90,45 @@ public class LivraisonService {
             throw new ForbiddenException("Seuls les vendeurs et admins peuvent créer des livraisons");
         }
 
+        return creerLivraisonPourVendeur(vendeur, request);
+    }
+
+    /**
+     * Crée une livraison pour un vendeur déjà résolu (sans passer par le
+     * {@code SecurityContext}). Utilisé par {@link #creerLivraison} une fois
+     * le vendeur identifié (session JWT), ainsi que par les intégrations
+     * partenaires (clé API, webhook Shopify) qui n'ont pas de session.
+     */
+    public LivraisonResponse creerLivraisonPourVendeur(Vendeur vendeur, CreateLivraisonRequest request) {
+        return creerLivraisonPourVendeur(vendeur, request, null, null);
+    }
+
+    /**
+     * @param origine    null (créée depuis l'interface), "API" (intégration
+     *                   générique via clé API) ou "SHOPIFY" (webhook Shopify).
+     * @param origineRef identifiant externe (ID commande Shopify, ou clé
+     *                    d'idempotence du partenaire) ; null si sans objet.
+     *                    Quand fourni, une commande déjà créée pour ce
+     *                    (vendeur, origine, référence) est renvoyée telle
+     *                    quelle au lieu d'en créer une seconde — protège
+     *                    contre les doublons (webhook redélivré, retry réseau).
+     */
+    @Transactional
+    public LivraisonResponse creerLivraisonPourVendeur(
+            Vendeur vendeur, CreateLivraisonRequest request, String origine, String origineRef) {
+
+        if (origineRef != null) {
+            Livraison existante = livraisonRepository
+                    .findByVendeurAndOrigineAndOrigineRef(vendeur, origine, origineRef)
+                    .orElse(null);
+            if (existante != null) {
+                log.info("↩️ Commande déjà créée pour {} {} (idempotence) -> {}",
+                        origine, origineRef, existante.getNumeroTracking());
+                BigDecimal montantDejaCree = existante.getMontantCOD().subtract(existante.getFraisLivraison());
+                return buildLivraisonResponse(existante, montantDejaCree);
+            }
+        }
+
         log.debug("Vendeur: {} {} (ID: {})", vendeur.getPrenom(), vendeur.getNom(), vendeur.getId());
 
         // 3. Urgence + poids
@@ -222,6 +261,8 @@ public class LivraisonService {
         }
 
         livraison.setNotesPourLivreur(request.getNotesPourLivreur());
+        livraison.setOrigine(origine);
+        livraison.setOrigineRef(origineRef);
 
         // 9. Sauvegarder
         livraison = livraisonRepository.save(livraison);

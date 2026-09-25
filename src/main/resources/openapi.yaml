@@ -3811,6 +3811,226 @@ paths:
       security:
         - bearerAuth: [ ]
 
+  # ============================================
+  # CLÉ API PARTENAIRE (intégrations externes : Shopify, Zapier, etc.)
+  # ============================================
+  /vendeur/api-key:
+    get:
+      tags:
+        - Vendeur
+      operationId: vendeurApiKeyGet
+      summary: Consulter sa clé API partenaire (intégrations externes)
+      description: >
+        Renvoie la clé API actuelle du vendeur connecté (null si aucune clé
+        n'a encore été générée). Cette clé permet à un système externe
+        (boutique Shopify, script, Zapier...) de créer des commandes en son
+        nom, sans authentification par mot de passe.
+      responses:
+        '200':
+          description: Clé API actuelle (ou null)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiKeyResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+      security:
+        - bearerAuth: [ ]
+
+  /vendeur/api-key/regenerer:
+    post:
+      tags:
+        - Vendeur
+      operationId: vendeurApiKeyRegenererPost
+      summary: (Re)générer sa clé API partenaire
+      description: >
+        Génère une nouvelle clé API pour le vendeur connecté. Si une clé
+        existait déjà, elle est immédiatement invalidée : toute intégration
+        utilisant l'ancienne clé cessera de fonctionner tant qu'elle n'est
+        pas mise à jour avec la nouvelle.
+      responses:
+        '200':
+          description: Nouvelle clé API générée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiKeyResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+      security:
+        - bearerAuth: [ ]
+
+  /admin/vendeurs/{id}/api-key:
+    get:
+      tags:
+        - Admin - Vendeurs
+      operationId: adminVendeurApiKeyGet
+      summary: Consulter la clé API partenaire d'un vendeur (support)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Clé API actuelle (ou null)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiKeyResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - bearerAuth: [ ]
+
+  /admin/vendeurs/{id}/api-key/regenerer:
+    post:
+      tags:
+        - Admin - Vendeurs
+      operationId: adminVendeurApiKeyRegenererPost
+      summary: (Re)générer la clé API partenaire d'un vendeur (support onboarding)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Nouvelle clé API générée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiKeyResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security:
+        - bearerAuth: [ ]
+
+  # ============================================
+  # PARTENAIRES EXTERNES (création de commande sans session)
+  # Authentification par clé API (header X-Api-Key ou paramètre ?key=),
+  # jamais par mot de passe/JWT. Endpoints publics au sens Spring Security ;
+  # la clé est vérifiée manuellement côté serveur.
+  # ============================================
+  /partner/commandes:
+    post:
+      tags:
+        - Partner
+      operationId: partnerCommandesPost
+      summary: Créer une commande pour le compte d'un partenaire (intégration générique)
+      description: >
+        Endpoint générique pour les intégrations externes (script maison,
+        Zapier, Make...). Le partenaire est identifié par sa clé API (header
+        X-Api-Key), pas par une session utilisateur. Crée la commande
+        exactement comme si le vendeur l'avait créée lui-même depuis son
+        espace (même file d'attente closing, même calcul de commission,
+        même décrément de stock).
+      parameters:
+        - name: X-Api-Key
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Clé API du vendeur (voir /vendeur/api-key).
+        - name: X-Idempotency-Key
+          in: header
+          required: false
+          schema:
+            type: string
+          description: >
+            Identifiant unique de la commande côté partenaire (ex. son propre
+            ID de commande). Si une commande a déjà été créée avec la même
+            clé d'idempotence pour ce vendeur, elle est renvoyée telle quelle
+            au lieu d'en créer une seconde (protège contre les doubles envois
+            réseau / retries).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateLivraisonRequest'
+      responses:
+        '201':
+          description: Commande créée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LivraisonResponse'
+        '400':
+          description: Données invalides
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Clé API manquante, invalide, ou compte partenaire non actif
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security: []
+
+  /partner/shopify/commandes:
+    post:
+      tags:
+        - Partner
+      operationId: partnerShopifyCommandesPost
+      summary: Adaptateur webhook Shopify — crée une commande à partir d'une commande Shopify
+      description: >
+        Destiné à être appelé directement par le webhook Shopify
+        "Order creation" (Réglages > Notifications > Webhooks, ou Shopify
+        Flow) configuré sur la boutique du partenaire. Reçoit le JSON natif
+        d'une commande Shopify et la convertit automatiquement en commande
+        Dioks. L'interface Notifications de Shopify ne permet pas d'ajouter
+        un en-tête personnalisé : la clé API est donc passée en paramètre
+        d'URL. Idempotent sur l'identifiant de commande Shopify (un webhook
+        redélivré par Shopify ne crée pas de doublon).
+      parameters:
+        - name: key
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Clé API du vendeur (voir /vendeur/api-key).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShopifyOrderWebhook'
+      responses:
+        '201':
+          description: Commande créée (ou déjà existante, renvoyée telle quelle)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LivraisonResponse'
+        '400':
+          description: Données Shopify inexploitables (ex. aucun téléphone client)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Clé API manquante, invalide, ou compte partenaire non actif
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security: []
+
 # ============================================
 # COMPONENTS
 # ============================================
@@ -6244,4 +6464,104 @@ components:
         totalPaye:
           type: number
           format: decimal
+
+    # ============================================
+    # CLÉ API PARTENAIRE / INTÉGRATIONS EXTERNES
+    # ============================================
+    ApiKeyResponse:
+      type: object
+      properties:
+        apiKey:
+          type: string
+          description: Clé API actuelle du vendeur, ou null si aucune n'a encore été générée.
+          example: "dioks_live_9f8a1c2e7b3d4f5061728394a5b6c7d8"
+
+    # Sous-ensemble du JSON natif du webhook Shopify "orders/create" (champs
+    # effectivement utilisés pour construire la commande Dioks correspondante).
+    ShopifyAddress:
+      type: object
+      properties:
+        first_name:
+          type: string
+        last_name:
+          type: string
+        phone:
+          type: string
+        address1:
+          type: string
+        address2:
+          type: string
+        city:
+          type: string
+        province:
+          type: string
+        country:
+          type: string
+
+    ShopifyCustomer:
+      type: object
+      properties:
+        first_name:
+          type: string
+        last_name:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+
+    ShopifyLineItem:
+      type: object
+      properties:
+        title:
+          type: string
+          example: "Ensemble wax"
+        quantity:
+          type: integer
+          example: 2
+        price:
+          type: string
+          description: Prix unitaire tel qu'envoyé par Shopify (chaîne de caractères).
+          example: "15000.00"
+
+    ShopifyOrderWebhook:
+      type: object
+      description: Payload natif du webhook Shopify "orders/create".
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Identifiant unique de la commande côté Shopify (sert de clé d'idempotence).
+          example: 450789469
+        order_number:
+          type: integer
+          example: 1001
+        name:
+          type: string
+          example: "#1001"
+        email:
+          type: string
+        phone:
+          type: string
+          description: Téléphone au niveau de la commande (repli si absent ailleurs).
+        note:
+          type: string
+        currency:
+          type: string
+          example: "XOF"
+        total_price:
+          type: string
+          description: Montant total tel qu'envoyé par Shopify (chaîne de caractères).
+          example: "35000.00"
+        financial_status:
+          type: string
+          example: "paid"
+        customer:
+          $ref: '#/components/schemas/ShopifyCustomer'
+        shipping_address:
+          $ref: '#/components/schemas/ShopifyAddress'
+        line_items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShopifyLineItem'
 

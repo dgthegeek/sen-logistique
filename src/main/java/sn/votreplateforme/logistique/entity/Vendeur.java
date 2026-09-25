@@ -119,6 +119,14 @@ public class Vendeur extends User {
     private BigDecimal commissionFixe;
 
     /**
+     * Clé API permettant à un système externe (boutique Shopify, script,
+     * Zapier...) de créer des commandes au nom de ce vendeur, sans session
+     * ni mot de passe. Null tant qu'aucune intégration n'a été configurée.
+     */
+    @Column(name = "api_key", length = 80, unique = true)
+    private String apiKey;
+
+    /**
      * Participation à la Dioks League (classement gamifié entre vendeurs).
      * Opt-in : tant que false, le vendeur n'apparaît pas dans le classement des autres.
      * Les stats étant calculées sur les livraisons réelles, quitter/revenir ne remet rien à zéro.
