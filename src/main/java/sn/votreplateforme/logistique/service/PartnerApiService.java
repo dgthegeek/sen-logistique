@@ -1,5 +1,6 @@
 package sn.votreplateforme.logistique.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -45,6 +46,7 @@ public class PartnerApiService {
     private final VendeurRepository vendeurRepository;
     private final ProduitRepository produitRepository;
     private final LivraisonService livraisonService;
+    private final ObjectMapper objectMapper;
 
     // ==================== GESTION DE LA CLÉ ====================
 
@@ -92,6 +94,8 @@ public class PartnerApiService {
     @Transactional
     public LivraisonResponse creerCommande(String apiKey, String idempotencyKey, CreateLivraisonRequest request) {
         Vendeur vendeur = resoudreVendeurParCle(apiKey);
+        log.info("📥 [PARTNER] Requête reçue - vendeur={} (id={}) idempotencyKey={} : {}",
+                vendeur.getNomComplet(), vendeur.getId(), idempotencyKey, serialiser(request));
         return livraisonService.creerLivraisonPourVendeur(vendeur, request, "API", idempotencyKey);
     }
 
@@ -99,9 +103,29 @@ public class PartnerApiService {
     @Transactional
     public LivraisonResponse creerCommandeDepuisShopify(String apiKey, ShopifyOrderWebhook payload) {
         Vendeur vendeur = resoudreVendeurParCle(apiKey);
+        // Journalisé tel que reçu, AVANT toute conversion/validation : sert de trace d'audit
+        // et de base de diagnostic si Shopify envoie des champs vides/absents sur une vraie
+        // commande (cas documenté, différent des commandes de test créées depuis l'admin
+        // Shopify) — voir la commande refusée juste après dans les logs le cas échéant.
+        log.info("📥 [SHOPIFY] Commande {} reçue pour le vendeur {} (id={}) : {}",
+                libelleCommande(payload), vendeur.getNomComplet(), vendeur.getId(), serialiser(payload));
+
         CreateLivraisonRequest request = mapperShopify(vendeur, payload);
         String origineRef = payload.getId() != null ? String.valueOf(payload.getId()) : null;
         return livraisonService.creerLivraisonPourVendeur(vendeur, request, "SHOPIFY", origineRef);
+    }
+
+    /**
+     * Sérialise un objet en JSON pour le journal d'audit. Ne fait jamais échouer
+     * l'appelant : en cas de souci de sérialisation (ne devrait pas arriver), on
+     * journalise un repli plutôt que de casser la création de la commande.
+     */
+    private String serialiser(Object objet) {
+        try {
+            return objectMapper.writeValueAsString(objet);
+        } catch (Exception e) {
+            return "(non sérialisable: " + e.getMessage() + ")";
+        }
     }
 
     /**
