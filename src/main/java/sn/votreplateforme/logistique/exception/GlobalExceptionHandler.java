@@ -246,6 +246,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ForbiddenException.class)
     public ResponseEntity<ErrorResponse> handleForbiddenException(ForbiddenException ex) {
+        log.warn("Accès refusé : {}", ex.getMessage());
         ErrorResponse error = new ErrorResponse();
         error.setTimestamp(OffsetDateTime.now());
         error.setStatus(403);
