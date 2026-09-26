@@ -10,6 +10,7 @@ import sn.votreplateforme.logistique.entity.Closeur;
 import sn.votreplateforme.logistique.entity.Livraison;
 import sn.votreplateforme.logistique.entity.StatutLivraison;
 import sn.votreplateforme.logistique.exception.BusinessException;
+import sn.votreplateforme.logistique.exception.ForbiddenException;
 import sn.votreplateforme.logistique.exception.ResourceNotFoundException;
 import sn.votreplateforme.logistique.repository.CloseurRepository;
 import sn.votreplateforme.logistique.repository.LivraisonRepository;
@@ -61,9 +62,11 @@ public class ClosingService {
             statuts = List.of(StatutLivraison.valueOf(statutDto.name()));
         }
 
+        Closeur closeur = currentCloseur();
         List<CommandeCloseur> commandes = livraisonRepository
                 .findByStatutInOrderByDateCreationAsc(statuts)
                 .stream()
+                .filter(l -> accesAutorise(closeur, l))
                 .map(this::mapToCommandeCloseur)
                 .collect(Collectors.toList());
 
@@ -233,8 +236,25 @@ public class ClosingService {
     // ==================== HELPERS ====================
 
     private Livraison getCommande(Long id) {
-        return livraisonRepository.findById(id)
+        Livraison l = livraisonRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Commande non trouvée: " + id));
+        if (!accesAutorise(currentCloseur(), l)) {
+            throw new ForbiddenException("Cette commande appartient à un vendeur non assigné à ce closeur");
+        }
+        return l;
+    }
+
+    /**
+     * Un closeur sans vendeur assigné (liste vide) voit tout, comme avant
+     * cette fonctionnalité. Un admin (currentCloseur() == null ici) voit
+     * aussi tout : seule la restriction propre à un closeur s'applique.
+     */
+    private boolean accesAutorise(Closeur closeur, Livraison l) {
+        if (closeur == null || closeur.getVendeursAssignes().isEmpty()) {
+            return true;
+        }
+        return l.getVendeur() != null && closeur.getVendeursAssignes().stream()
+                .anyMatch(v -> v.getId().equals(l.getVendeur().getId()));
     }
 
     private void exigerStatut(Livraison l, StatutLivraison attendu) {
@@ -262,6 +282,12 @@ public class ClosingService {
         c.setMontantCOD(l.getMontantCOD());
         if (l.getDateCreation() != null) {
             c.setDateCreation(l.getDateCreation().atOffset(ZoneOffset.UTC));
+        }
+        if (l.getVendeur() != null) {
+            c.setVendeurId(l.getVendeur().getId());
+            c.setNomVendeur(l.getVendeur().getNomComplet());
+            c.setBoutiqueVendeur(l.getVendeur().getNomBoutique());
+            c.setTelephoneVendeur(l.getVendeur().getTelephone());
         }
         return c;
     }
