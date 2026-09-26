@@ -5308,6 +5308,15 @@ components:
         dateCreation:
           type: string
           format: date-time
+        vendeurId:
+          type: integer
+          format: int64
+        nomVendeur:
+          type: string
+        boutiqueVendeur:
+          type: string
+        telephoneVendeur:
+          type: string
 
     CommandeDispatch:
       type: object
@@ -5378,6 +5387,12 @@ components:
           $ref: '#/components/schemas/UserRole'
         actif:
           type: boolean
+        vendeurIds:
+          type: array
+          items:
+            type: integer
+            format: int64
+          description: Uniquement pour les closeurs - vendeurs auxquels il est restreint. Vide = tous les vendeurs (pas de restriction).
 
     LivreurResponse:
       type: object
@@ -5424,6 +5439,12 @@ components:
         zonePreferee:
           type: string
           description: Optionnel - uniquement pour les livreurs
+        vendeurIds:
+          type: array
+          items:
+            type: integer
+            format: int64
+          description: Optionnel - uniquement pour les closeurs. Absent ou vide = pas de restriction (tous les vendeurs). Non vide = restreint le closeur à ces vendeurs.
 
     AssignerLivreurRequest:
       type: object
@@ -5461,6 +5482,12 @@ components:
           type: string
           description: Optionnel - pour réinitialiser le mot de passe
           minLength: 6
+        vendeurIds:
+          type: array
+          items:
+            type: integer
+            format: int64
+          description: Uniquement pour les closeurs. Absent = ne pas modifier. Tableau vide = lever toute restriction (tous les vendeurs). Tableau non vide = restreindre à ces vendeurs.
 
     CommentaireRequest:
       type: object

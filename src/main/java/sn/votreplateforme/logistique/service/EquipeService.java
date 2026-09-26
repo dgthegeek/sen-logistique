@@ -11,13 +11,18 @@ import sn.votreplateforme.logistique.dto.MembreResponse;
 import sn.votreplateforme.logistique.entity.Closeur;
 import sn.votreplateforme.logistique.entity.Livreur;
 import sn.votreplateforme.logistique.entity.StatutLivraison;
+import sn.votreplateforme.logistique.entity.User;
 import sn.votreplateforme.logistique.entity.UserRole;
+import sn.votreplateforme.logistique.entity.Vendeur;
 import sn.votreplateforme.logistique.repository.CloseurRepository;
 import sn.votreplateforme.logistique.repository.LivraisonRepository;
 import sn.votreplateforme.logistique.repository.LivreurRepository;
 import sn.votreplateforme.logistique.repository.UserRepository;
+import sn.votreplateforme.logistique.repository.VendeurRepository;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -39,6 +44,7 @@ public class EquipeService {
     private final sn.votreplateforme.logistique.repository.DispatcheurRepository dispatcheurRepository;
     private final UserRepository userRepository;
     private final LivraisonRepository livraisonRepository;
+    private final VendeurRepository vendeurRepository;
     private final PasswordEncoder passwordEncoder;
 
     // ==================== CLOSEURS ====================
@@ -55,6 +61,7 @@ public class EquipeService {
         closeur.setPassword(passwordEncoder.encode(request.getPassword()));
         closeur.setRole(UserRole.CLOSEUR);
         closeur.setActif(true);
+        closeur.setVendeursAssignes(resoudreVendeurs(request.getVendeurIds()));
 
         closeur = closeurRepository.save(closeur);
         log.info("Closeur créé: {} (ID: {})", closeur.getTelephone(), closeur.getId());
@@ -74,6 +81,9 @@ public class EquipeService {
                 .orElseThrow(() -> new sn.votreplateforme.logistique.exception.ResourceNotFoundException(
                         "Closeur non trouvé: " + id));
         appliquerModifs(closeur, request);
+        if (request.getVendeurIds() != null) {
+            closeur.setVendeursAssignes(resoudreVendeurs(request.getVendeurIds()));
+        }
         return mapToMembreResponse(closeurRepository.save(closeur), UserRole.CLOSEUR);
     }
 
@@ -184,7 +194,7 @@ public class EquipeService {
         }
     }
 
-    private MembreResponse mapToMembreResponse(sn.votreplateforme.logistique.entity.User u, UserRole role) {
+    private MembreResponse mapToMembreResponse(User u, UserRole role) {
         MembreResponse m = new MembreResponse();
         m.setId(u.getId());
         m.setNom(u.getNom());
@@ -193,7 +203,29 @@ public class EquipeService {
         m.setEmail(u.getEmail());
         m.setRole(sn.votreplateforme.logistique.dto.UserRole.valueOf(role.name()));
         m.setActif(u.isActif());
+        if (u instanceof Closeur closeur) {
+            m.setVendeurIds(closeur.getVendeursAssignes().stream()
+                    .map(Vendeur::getId)
+                    .sorted()
+                    .collect(Collectors.toList()));
+        }
         return m;
+    }
+
+    /**
+     * Résout les IDs de vendeurs envoyés par l'admin en entités. Liste
+     * absente ou vide = pas de restriction (le closeur voit tous les
+     * vendeurs).
+     */
+    private Set<Vendeur> resoudreVendeurs(List<Long> vendeurIds) {
+        if (vendeurIds == null || vendeurIds.isEmpty()) {
+            return new HashSet<>();
+        }
+        List<Vendeur> trouves = vendeurRepository.findAllById(vendeurIds);
+        if (trouves.size() != new HashSet<>(vendeurIds).size()) {
+            throw new IllegalArgumentException("Un ou plusieurs vendeurs sont introuvables");
+        }
+        return new HashSet<>(trouves);
     }
 
     private LivreurResponse mapToLivreurResponse(Livreur l) {
