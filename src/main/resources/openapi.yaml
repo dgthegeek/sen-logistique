@@ -4687,6 +4687,23 @@ components:
         nombreEchecs: { type: integer }
         tauxReussite: { type: number, format: double }
         tempsMoyenLivraisonMin: { type: integer }
+        echecsParMotif:
+          type: array
+          items:
+            $ref: '#/components/schemas/EchecParMotif'
+          description: Répartition des échecs de ce livreur par motif (pourcentage calculé sur son nombre d'échecs).
+
+    EchecParMotif:
+      type: object
+      properties:
+        motif:
+          $ref: '#/components/schemas/MotifEchec'
+        nombre:
+          type: integer
+        pourcentage:
+          type: number
+          format: double
+          description: Pourcentage de ce motif parmi les échecs.
 
     PerformanceResponse:
       type: object
@@ -4697,6 +4714,11 @@ components:
         tempsMoyenLivraisonMin: { type: integer }
         totalLivrees: { type: integer }
         totalEchecs: { type: integer }
+        echecsParMotif:
+          type: array
+          items:
+            $ref: '#/components/schemas/EchecParMotif'
+          description: Répartition de tous les échecs (tous livreurs confondus) par motif.
         closeurs:
           type: array
           items:

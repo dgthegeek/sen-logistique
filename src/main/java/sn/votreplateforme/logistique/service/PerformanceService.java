@@ -4,11 +4,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import sn.votreplateforme.logistique.dto.EchecParMotif;
 import sn.votreplateforme.logistique.dto.PerfCloseur;
 import sn.votreplateforme.logistique.dto.PerfDispatcheur;
 import sn.votreplateforme.logistique.dto.PerfLivreur;
 import sn.votreplateforme.logistique.dto.PerformanceResponse;
 import sn.votreplateforme.logistique.entity.Livraison;
+import sn.votreplateforme.logistique.entity.MotifEchec;
 import sn.votreplateforme.logistique.entity.StatutLivraison;
 import sn.votreplateforme.logistique.repository.LivraisonRepository;
 
@@ -17,6 +19,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -62,6 +65,7 @@ public class PerformanceService {
         long sumDispatch = 0, cntDispatch = 0;
         long sumLivraison = 0, cntLivraison = 0;
         int totalLivrees = 0, totalEchecs = 0;
+        Map<MotifEchec, Integer> echecsParMotifGlobal = new EnumMap<>(MotifEchec.class);
 
         for (Livraison l : livraisons) {
             Integer mPEC = minutes(l.getDateCreation(), l.getDatePriseEnCharge());
@@ -108,6 +112,9 @@ public class PerformanceService {
                     if (mLivraison != null) { a.sumLivraison += mLivraison; a.cntLivraison++; }
                 } else if (estEchec(l.getStatut())) {
                     a.echecs++;
+                    if (l.getMotifEchec() != null) {
+                        a.echecsParMotif.merge(l.getMotifEchec(), 1, Integer::sum);
+                    }
                 }
             }
 
@@ -116,7 +123,12 @@ public class PerformanceService {
             if (mDispatch != null) { sumDispatch += mDispatch; cntDispatch++; }
             if (mLivraison != null) { sumLivraison += mLivraison; cntLivraison++; }
             if (l.getStatut() == StatutLivraison.LIVREE) totalLivrees++;
-            else if (estEchec(l.getStatut())) totalEchecs++;
+            else if (estEchec(l.getStatut())) {
+                totalEchecs++;
+                if (l.getMotifEchec() != null) {
+                    echecsParMotifGlobal.merge(l.getMotifEchec(), 1, Integer::sum);
+                }
+            }
         }
 
         PerformanceResponse resp = new PerformanceResponse();
@@ -126,6 +138,7 @@ public class PerformanceService {
         resp.setTempsMoyenLivraisonMin(moyenne(sumLivraison, cntLivraison));
         resp.setTotalLivrees(totalLivrees);
         resp.setTotalEchecs(totalEchecs);
+        resp.setEchecsParMotif(repartitionMotifs(echecsParMotifGlobal, totalEchecs));
 
         List<PerfCloseur> lc = new ArrayList<>();
         closeurs.forEach((id, a) -> {
@@ -160,6 +173,7 @@ public class PerformanceService {
             int total = a.livrees + a.echecs;
             v.setTauxReussite(total > 0 ? Math.round(a.livrees * 1000.0 / total) / 10.0 : 0.0);
             v.setTempsMoyenLivraisonMin(moyenne(a.sumLivraison, a.cntLivraison));
+            v.setEchecsParMotif(repartitionMotifs(a.echecsParMotif, a.echecs));
             ll.add(v);
         });
         ll.sort(Comparator.comparingInt(PerfLivreur::getNombreLivrees).reversed());
@@ -185,6 +199,20 @@ public class PerformanceService {
         return compte > 0 ? (int) (somme / compte) : 0;
     }
 
+    /** Convertit un décompte par motif en pourcentages (base = nombre total d'échecs). */
+    private List<EchecParMotif> repartitionMotifs(Map<MotifEchec, Integer> parMotif, int totalEchecs) {
+        List<EchecParMotif> resultat = new ArrayList<>();
+        parMotif.forEach((motif, nombre) -> {
+            EchecParMotif e = new EchecParMotif();
+            e.setMotif(sn.votreplateforme.logistique.dto.MotifEchec.valueOf(motif.name()));
+            e.setNombre(nombre);
+            e.setPourcentage(totalEchecs > 0 ? Math.round(nombre * 1000.0 / totalEchecs) / 10.0 : 0.0);
+            resultat.add(e);
+        });
+        resultat.sort(Comparator.comparingInt(EchecParMotif::getNombre).reversed());
+        return resultat;
+    }
+
     private static class CloseurAcc {
         String nom, prenom;
         int prisEnCharge, pretes;
@@ -201,5 +229,6 @@ public class PerformanceService {
         String nom, prenom;
         int livrees, echecs;
         long sumLivraison, cntLivraison;
+        Map<MotifEchec, Integer> echecsParMotif = new EnumMap<>(MotifEchec.class);
     }
 }
