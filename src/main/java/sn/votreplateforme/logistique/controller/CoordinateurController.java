@@ -45,7 +45,7 @@ public class CoordinateurController implements CoordinateurApi {
     @Override
     public ResponseEntity<PageLivraison> coordinateurHistorique(
             StatutLivraison statut, LocalDate date, Integer page, Integer size) {
-        return ResponseEntity.ok(adminLivraisonService.getAllLivraisons(statut, date, page, size));
+        return ResponseEntity.ok(adminLivraisonService.getAllLivraisons(statut, date, null, page, size));
     }
 
     @Override

@@ -43,10 +43,11 @@ public class AdminLivraisonService {
     public PageLivraison getAllLivraisons(
             sn.votreplateforme.logistique.dto.StatutLivraison statutDto,
             LocalDate date,
+            String reference,
             Integer page,
             Integer size
     ) {
-        log.info("Récupération liste livraisons - Statut: {}, Date: {}", statutDto, date);
+        log.info("Récupération liste livraisons - Statut: {}, Date: {}, Référence: {}", statutDto, date, reference);
 
         // Valeurs par défaut
         int pageNumber = (page != null && page >= 0) ? page : 0;
@@ -76,6 +77,7 @@ public class AdminLivraisonService {
                 statutEntity,
                 debut,
                 fin,
+                (reference != null && !reference.isBlank()) ? reference.trim() : null,
                 pageable
         );
 
@@ -279,6 +281,8 @@ public class AdminLivraisonService {
             default -> livraison.getStatut().name();
         };
         response.setMessage(message);
+        response.setOrigine(livraison.getOrigine());
+        response.setOrigineRef(livraison.getOrigineRef());
 
         return response;
     }
