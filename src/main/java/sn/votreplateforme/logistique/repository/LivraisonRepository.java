@@ -222,13 +222,15 @@ public interface LivraisonRepository extends JpaRepository<Livraison, Long> {
             "(:vendeur IS NULL OR l.vendeur = :vendeur) AND " +
             "(:statut IS NULL OR l.statut = :statut) AND " +
             "(CAST(:debut AS timestamp) IS NULL OR l.dateCreation >= :debut) AND " +
-            "(CAST(:fin AS timestamp) IS NULL OR l.dateCreation <= :fin) " +
+            "(CAST(:fin AS timestamp) IS NULL OR l.dateCreation <= :fin) AND " +
+            "(:reference IS NULL OR LOWER(l.origineRef) LIKE LOWER(CONCAT('%', :reference, '%'))) " +
             "ORDER BY l.dateCreation DESC")
     Page<Livraison> rechercherLivraisons(
             @Param("vendeur") Vendeur vendeur,
             @Param("statut") StatutLivraison statut,
             @Param("debut") LocalDateTime debut,
             @Param("fin") LocalDateTime fin,
+            @Param("reference") String reference,
             Pageable pageable
     );
 

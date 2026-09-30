@@ -814,6 +814,11 @@ paths:
           schema:
             type: string
             format: date
+        - name: reference
+          in: query
+          description: Filtre par référence externe (ex. numéro de commande Shopify). Recherche partielle, insensible à la casse.
+          schema:
+            type: string
         - name: page
           in: query
           schema:
@@ -4302,6 +4307,12 @@ components:
         message:
           type: string
           example: "Livraison crÃ©Ã©e avec succÃ¨s ! Ã‰crivez #DKR-00567 sur votre colis."
+        origine:
+          type: string
+          description: Origine de la commande (null = créée depuis l'interface, API, SHOPIFY).
+        origineRef:
+          type: string
+          description: Référence externe (ex. ID de commande Shopify), null si créée depuis l'interface.
 
     LivraisonDetailResponse:
       type: object

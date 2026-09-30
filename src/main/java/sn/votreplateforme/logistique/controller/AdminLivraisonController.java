@@ -33,14 +33,15 @@ public class AdminLivraisonController implements AdminLivraisonsApi {
     public ResponseEntity<PageLivraison> adminLivraisonsGet(
             sn.votreplateforme.logistique.dto.StatutLivraison statut,
             LocalDate date,
+            String reference,
             Integer page,
             Integer size
     ) {
-        log.info("📦 Liste livraisons admin - Statut: {}, Date: {}, Page: {}",
-                statut, date, page);
+        log.info("📦 Liste livraisons admin - Statut: {}, Date: {}, Référence: {}, Page: {}",
+                statut, date, reference, page);
 
         PageLivraison response = adminLivraisonService.getAllLivraisons(
-                statut, date, page, size);
+                statut, date, reference, page, size);
 
         log.info("✅ {} livraisons récupérées", response.getContent().size());
 
