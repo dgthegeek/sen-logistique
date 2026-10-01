@@ -223,7 +223,9 @@ public interface LivraisonRepository extends JpaRepository<Livraison, Long> {
             "(:statut IS NULL OR l.statut = :statut) AND " +
             "(CAST(:debut AS timestamp) IS NULL OR l.dateCreation >= :debut) AND " +
             "(CAST(:fin AS timestamp) IS NULL OR l.dateCreation <= :fin) AND " +
-            "(:reference IS NULL OR LOWER(l.origineRef) LIKE LOWER(CONCAT('%', CAST(:reference AS string), '%'))) " +
+            "(:reference IS NULL OR " +
+            "   LOWER(l.numeroTracking) LIKE LOWER(CONCAT('%', CAST(:reference AS string), '%')) OR " +
+            "   LOWER(l.origineRef) LIKE LOWER(CONCAT('%', CAST(:reference AS string), '%'))) " +
             "ORDER BY l.dateCreation DESC")
     Page<Livraison> rechercherLivraisons(
             @Param("vendeur") Vendeur vendeur,

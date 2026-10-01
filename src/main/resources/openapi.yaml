@@ -816,7 +816,7 @@ paths:
             format: date
         - name: reference
           in: query
-          description: Filtre par référence externe (ex. numéro de commande Shopify). Recherche partielle, insensible à la casse.
+          description: Filtre par numéro de tracking ou référence externe (ex. numéro de commande Shopify). Recherche partielle, insensible à la casse, sur les deux champs.
           schema:
             type: string
         - name: page
