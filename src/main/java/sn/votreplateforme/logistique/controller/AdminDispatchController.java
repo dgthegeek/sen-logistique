@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.RestController;
 import sn.votreplateforme.logistique.api.DispatchApi;
 import sn.votreplateforme.logistique.dto.AssignerLivreurRequest;
 import sn.votreplateforme.logistique.dto.CommandeDispatch;
+import sn.votreplateforme.logistique.dto.CommandeLivreur;
 import sn.votreplateforme.logistique.dto.DispatchAssigner200Response;
 import sn.votreplateforme.logistique.service.DispatchService;
 
@@ -36,5 +37,10 @@ public class AdminDispatchController implements DispatchApi {
     @Override
     public ResponseEntity<DispatchAssigner200Response> dispatchAssigner(AssignerLivreurRequest assignerLivreurRequest) {
         return ResponseEntity.ok(dispatchService.assigner(assignerLivreurRequest));
+    }
+
+    @Override
+    public ResponseEntity<List<CommandeLivreur>> dispatchLivreurCommandes(Long id) {
+        return ResponseEntity.ok(dispatchService.getCommandesEnCours(id));
     }
 }
