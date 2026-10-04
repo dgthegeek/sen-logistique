@@ -5373,6 +5373,15 @@ components:
         montantCOD:
           type: number
           format: decimal
+        vendeurId:
+          type: integer
+          format: int64
+        nomVendeur:
+          type: string
+        boutiqueVendeur:
+          type: string
+        telephoneVendeur:
+          type: string
 
     CommandeLivreur:
       type: object
