@@ -2480,6 +2480,38 @@ paths:
       security:
         - bearerAuth: [ ]
 
+  /dispatch/livreurs/{id}/commandes:
+    get:
+      tags:
+        - Dispatch
+      operationId: dispatchLivreurCommandes
+      summary: Livraisons en cours (Assignée / En livraison) d'un livreur
+      description: Détail des livraisons que ce livreur a actuellement en charge, pour que le dispatcheur puisse évaluer sa charge avant de lui assigner une nouvelle commande.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Livraisons en cours du livreur
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CommandeLivreur'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+      security:
+        - bearerAuth: [ ]
+
   /dispatch/assigner:
     post:
       tags:

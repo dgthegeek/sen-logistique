@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import sn.votreplateforme.logistique.dto.AssignerLivreurRequest;
 import sn.votreplateforme.logistique.dto.CommandeDispatch;
+import sn.votreplateforme.logistique.dto.CommandeLivreur;
 import sn.votreplateforme.logistique.dto.DispatchAssigner200Response;
 import sn.votreplateforme.logistique.dto.LivreurResponse;
 import sn.votreplateforme.logistique.entity.Livraison;
@@ -61,6 +62,43 @@ public class DispatchService {
                 .filter(Livreur::isActif)
                 .map(this::mapToLivreurResponse)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Détail des livraisons en cours (Assignée / En livraison) d'un livreur,
+     * pour que le dispatcheur puisse évaluer sa charge avant de lui assigner
+     * une nouvelle commande.
+     */
+    @Transactional(readOnly = true)
+    public List<CommandeLivreur> getCommandesEnCours(Long livreurId) {
+        Livreur livreur = livreurRepository.findById(livreurId)
+                .orElseThrow(() -> new ResourceNotFoundException("Livreur non trouvé: " + livreurId));
+        return livraisonRepository
+                .findByLivreur_IdAndStatutInOrderByDateAssignationDesc(
+                        livreur.getId(),
+                        List.of(StatutLivraison.ASSIGNEE, StatutLivraison.EN_LIVRAISON))
+                .stream()
+                .map(this::mapToCommandeLivreur)
+                .collect(Collectors.toList());
+    }
+
+    private CommandeLivreur mapToCommandeLivreur(Livraison l) {
+        CommandeLivreur c = new CommandeLivreur();
+        c.setId(l.getId());
+        c.setNumeroTracking(l.getNumeroTracking());
+        c.setStatut(sn.votreplateforme.logistique.dto.StatutLivraison.valueOf(l.getStatut().name()));
+        c.setNomClient(l.getNomClient());
+        c.setTelephoneClient(l.getTelephoneClient());
+        if (l.getAdresseDestination() != null) {
+            c.setAdresse(l.getAdresseDestination().getAdresseComplete());
+            c.setPointRepere(l.getAdresseDestination().getPointRepere());
+            if (l.getAdresseDestination().getZone() != null) {
+                c.setZone(l.getAdresseDestination().getZone().getNom());
+            }
+        }
+        c.setProduit(l.getDescriptionProduit());
+        c.setMontantAEncaisser(l.getMontantCOD());
+        return c;
     }
 
     private LivreurResponse mapToLivreurResponse(Livreur l) {
