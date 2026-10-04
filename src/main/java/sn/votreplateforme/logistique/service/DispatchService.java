@@ -151,6 +151,12 @@ public class DispatchService {
         }
         c.setProduit(l.getDescriptionProduit());
         c.setMontantCOD(l.getMontantCOD());
+        if (l.getVendeur() != null) {
+            c.setVendeurId(l.getVendeur().getId());
+            c.setNomVendeur(l.getVendeur().getNomComplet());
+            c.setBoutiqueVendeur(l.getVendeur().getNomBoutique());
+            c.setTelephoneVendeur(l.getVendeur().getTelephone());
+        }
         return c;
     }
 
