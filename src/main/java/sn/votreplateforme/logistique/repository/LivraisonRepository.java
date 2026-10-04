@@ -131,14 +131,19 @@ public interface LivraisonRepository extends JpaRepository<Livraison, Long> {
     List<Livraison> findByLivreur_IdAndStatut(Long livreurId, StatutLivraison statut);
 
     /**
-     * Agrégat par zone : [nomZone, nbLivraisons, chiffreAffaires (LIVREE), nbEchecs].
+     * Agrégat par commune : [commune, nbLivraisons, chiffreAffaires (LIVREE), nbEchecs].
+     * Regroupé par commune (texte libre, toujours renseignée) et non par Zone :
+     * la tarification par zone est un repli legacy (cf. LivraisonService), la
+     * grande majorité des livraisons n'ont plus de zone associée depuis le
+     * passage à la commission fixe par vendeur. Un JOIN sur la zone les
+     * exclurait presque toutes, faussant le taux d'échec à 0%.
      * Les échecs couvrent le nouveau statut ECHEC et les anciens (dormant).
      */
-    @Query("SELECT z.nom, COUNT(l), " +
+    @Query("SELECT COALESCE(l.adresseDestination.commune, 'Non renseignée'), COUNT(l), " +
             "COALESCE(SUM(CASE WHEN l.statut = 'LIVREE' THEN l.montantCOD ELSE 0 END), 0), " +
             "SUM(CASE WHEN l.statut IN ('ECHEC','ECHEC_ABSENT','ECHEC_REFUSE') THEN 1 ELSE 0 END) " +
-            "FROM Livraison l JOIN l.adresseDestination.zone z " +
-            "GROUP BY z.nom ORDER BY COUNT(l) DESC")
+            "FROM Livraison l " +
+            "GROUP BY l.adresseDestination.commune ORDER BY COUNT(l) DESC")
     List<Object[]> statsParZone();
 
     // ==================== RECHERCHES PAR DATES ====================
