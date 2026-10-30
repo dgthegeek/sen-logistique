@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import sn.votreplateforme.logistique.repository.LivraisonRepository;
+import sn.votreplateforme.logistique.repository.TrackingNumberCounterRepository;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -17,38 +18,43 @@ import java.time.format.DateTimeFormatter;
 @Slf4j
 @RequiredArgsConstructor
 public class TrackingNumberGenerator {
-    
+
     private final LivraisonRepository livraisonRepository;
-    
+    private final TrackingNumberCounterRepository trackingNumberCounterRepository;
+
     /**
      * Génère un nouveau numéro de tracking unique
-     * 
+     *
      * Format: DKR-YYYYMMDD-XXXXX
      * - DKR : Préfixe pour Dakar
      * - YYYYMMDD : Date du jour
      * - XXXXX : Numéro séquentiel (00001, 00002, etc.)
+     *
+     * <p>Le numéro séquentiel vient d'un compteur dédié (table
+     * {@code tracking_number_counters}), incrémenté par un UPSERT atomique.
+     * L'ancienne version comptait les livraisons du jour puis ajoutait 1 :
+     * deux créations concurrentes pouvaient lire le même compte et
+     * produire le même numéro, violant la contrainte unique en base.
      */
     public String generate() {
-        // 1. Obtenir la date du jour au format YYYYMMDD
-        String dateStr = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        
+        // 1. Obtenir la date du jour
+        LocalDate aujourdHui = LocalDate.now();
+        String dateStr = aujourdHui.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+
         // 2. Préfixe avec la date
         String prefix = "DKR-" + dateStr + "-";
-        
-        // 3. Compter le nombre de livraisons créées aujourd'hui
-        long count = livraisonRepository.countByNumeroTrackingStartingWith(prefix);
-        
-        // 4. Générer le numéro séquentiel (incrémenté de 1)
-        long nextNumber = count + 1;
-        
-        // 5. Formater avec des zéros à gauche (5 chiffres)
+
+        // 3. Incrémenter le compteur du jour de façon atomique
+        int nextNumber = trackingNumberCounterRepository.incrementerEtRecuperer(aujourdHui);
+
+        // 4. Formater avec des zéros à gauche (5 chiffres)
         String numeroSequentiel = String.format("%05d", nextNumber);
-        
-        // 6. Construire le numéro de tracking complet
+
+        // 5. Construire le numéro de tracking complet
         String numeroTracking = prefix + numeroSequentiel;
-        
+
         log.debug("Numéro de tracking généré: {}", numeroTracking);
-        
+
         return numeroTracking;
     }
     
