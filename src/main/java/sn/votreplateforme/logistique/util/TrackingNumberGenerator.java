@@ -44,8 +44,9 @@ public class TrackingNumberGenerator {
         // 2. Préfixe avec la date
         String prefix = "DKR-" + dateStr + "-";
 
-        // 3. Incrémenter le compteur du jour de façon atomique
-        int nextNumber = trackingNumberCounterRepository.incrementerEtRecuperer(aujourdHui);
+        // 3. Incrémenter le compteur du jour de façon atomique (repart du
+        //    nombre existant si le compteur n'a pas encore de ligne pour ce jour)
+        int nextNumber = trackingNumberCounterRepository.incrementerEtRecuperer(aujourdHui, prefix + "%");
 
         // 4. Formater avec des zéros à gauche (5 chiffres)
         String numeroSequentiel = String.format("%05d", nextNumber);
