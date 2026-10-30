@@ -19,14 +19,18 @@ public interface TrackingNumberCounterRepository extends JpaRepository<TrackingN
      *
      * <p>Si le compteur n'existe pas encore pour ce jour (première commande
      * du jour, ou compteur réinitialisé/recréé), la valeur de départ n'est
-     * PAS 1 en dur : elle repart du nombre de livraisons déjà existantes
-     * avec ce préfixe (ex. "DKR-20261030-"), pour ne jamais entrer en
-     * collision avec des numéros déjà créés avant l'introduction de ce
-     * compteur (ou par tout autre moyen). Les appels suivants, eux,
-     * incrémentent uniquement la ligne déjà créée, sans recompter.
+     * PAS 1 en dur : elle repart du plus grand numéro déjà existant avec ce
+     * préfixe (ex. "DKR-20261030-"), pour ne jamais entrer en collision
+     * avec des numéros déjà créés avant l'introduction de ce compteur (ou
+     * par tout autre moyen). On utilise MAX, pas COUNT : s'il existe un
+     * trou dans la séquence (numéro supprimé, tentative échouée...), COUNT
+     * sous-estime le dernier numéro et recrée une collision — vu en prod.
+     * Les appels suivants, eux, incrémentent uniquement la ligne déjà
+     * créée, sans recalculer.
      */
     @Query(value = "INSERT INTO tracking_number_counters (jour, dernier_numero) " +
-            "VALUES (:jour, (SELECT COUNT(*) FROM livraisons WHERE numero_tracking LIKE :prefixLike) + 1) " +
+            "VALUES (:jour, COALESCE((SELECT MAX(CAST(RIGHT(numero_tracking, 5) AS INTEGER)) " +
+            "FROM livraisons WHERE numero_tracking LIKE :prefixLike), 0) + 1) " +
             "ON CONFLICT (jour) DO UPDATE SET dernier_numero = tracking_number_counters.dernier_numero + 1 " +
             "RETURNING dernier_numero", nativeQuery = true)
     Integer incrementerEtRecuperer(@Param("jour") LocalDate jour, @Param("prefixLike") String prefixLike);
